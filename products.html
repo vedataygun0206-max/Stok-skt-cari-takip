@@ -1,1 +1,1064 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<title>Ürün Yönetimi - SKT Stok & Cari Takip</title>
+
+<style>
+*{
+    box-sizing:border-box;
+}
+
+body{
+    margin:0;
+    font-family:Arial,Helvetica,sans-serif;
+    background:#f4f6f8;
+    color:#17202a;
+}
+
+header{
+    background:#17202a;
+    color:white;
+    padding:18px 20px;
+}
+
+.logo{
+    font-size:22px;
+    font-weight:bold;
+}
+
+.subtitle{
+    margin-top:5px;
+    font-size:14px;
+    opacity:.75;
+}
+
+nav{
+    background:white;
+    padding:10px;
+    display:flex;
+    gap:8px;
+    overflow-x:auto;
+    border-bottom:1px solid #ddd;
+}
+
+nav a{
+    text-decoration:none;
+    color:#17202a;
+    background:#eef1f4;
+    padding:10px 14px;
+    border-radius:8px;
+    font-weight:bold;
+    white-space:nowrap;
+}
+
+nav a:hover{
+    background:#17202a;
+    color:white;
+}
+
+main{
+    max-width:1400px;
+    margin:auto;
+    padding:20px;
+}
+
+.topbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:15px;
+    margin-bottom:20px;
+    flex-wrap:wrap;
+}
+
+h1{
+    margin:0;
+}
+
+.btn{
+    border:0;
+    padding:11px 16px;
+    border-radius:8px;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+.btn-primary{
+    background:#17202a;
+    color:white;
+}
+
+.btn-primary:hover{
+    opacity:.9;
+}
+
+.panel{
+    background:white;
+    border-radius:14px;
+    padding:20px;
+    box-shadow:0 2px 10px #00000010;
+    margin-bottom:20px;
+}
+
+.form-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+    gap:14px;
+}
+
+.form-group{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+}
+
+.form-group label{
+    font-size:13px;
+    font-weight:bold;
+}
+
+.form-group input,
+.form-group select{
+    width:100%;
+    padding:11px;
+    border:1px solid #ccd2d8;
+    border-radius:8px;
+    font-size:14px;
+}
+
+.form-group input:focus,
+.form-group select:focus{
+    outline:none;
+    border-color:#17202a;
+}
+
+.checkbox{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-top:24px;
+}
+
+.checkbox input{
+    width:18px;
+    height:18px;
+}
+
+.actions{
+    margin-top:18px;
+    display:flex;
+    gap:10px;
+}
+
+.message{
+    margin-top:12px;
+    padding:10px;
+    border-radius:8px;
+    display:none;
+}
+
+.success{
+    background:#e8f5e9;
+    color:#176b32;
+}
+
+.error{
+    background:#ffebee;
+    color:#b71c1c;
+}
+
+.table-wrap{
+    overflow-x:auto;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    min-width:850px;
+}
+
+th,
+td{
+    padding:11px;
+    border-bottom:1px solid #eee;
+    text-align:left;
+}
+
+th{
+    background:#f0f2f4;
+    font-size:13px;
+}
+
+td{
+    font-size:14px;
+}
+
+.badge{
+    display:inline-block;
+    padding:5px 8px;
+    border-radius:6px;
+    background:#e8f5e9;
+    color:#176b32;
+    font-size:12px;
+    font-weight:bold;
+}
+
+.empty{
+    text-align:center;
+    padding:30px;
+    color:#68727d;
+}
+
+.loading{
+    text-align:center;
+    padding:25px;
+}
+
+@media(max-width:600px){
+
+    main{
+        padding:12px;
+    }
+
+    .panel{
+        padding:15px;
+    }
+
+    .topbar{
+        align-items:flex-start;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+
+<div class="logo">
+📦 SKT Stok & Cari Takip
+</div>
+
+<div class="subtitle">
+Market Yönetim ve Stok Kontrol Sistemi
+</div>
+
+</header>
+
+
+<nav>
+
+<a href="/index.html">🏠 Ana Sayfa</a>
+<a href="/products.html">📦 Ürünler</a>
+<a href="/stock.html">📊 Stok</a>
+<a href="/skt.html">⏰ SKT</a>
+<a href="/cari.html">🧾 Cari</a>
+<a href="/kasa.html">💰 Kasa</a>
+<a href="/pos.html">🛒 POS</a>
+<a href="/reports.html">📈 Raporlar</a>
+<a href="/settings.html">⚙️ Ayarlar</a>
+
+</nav>
+
+
+<main>
+
+
+<div class="topbar">
+
+<div>
+<h1>📦 Ürün Yönetimi</h1>
+<div style="margin-top:5px;color:#68727d">
+Ürün kartları, fiyatlar, kategori ve birim yönetimi
+</div>
+</div>
+
+<button
+class="btn btn-primary"
+onclick="toggleForm()"
+>
+➕ Yeni Ürün
+</button>
+
+</div>
+
+
+<!-- ============================= -->
+<!-- YENİ ÜRÜN FORMU -->
+<!-- ============================= -->
+
+<div
+class="panel"
+id="productForm"
+style="display:none"
+>
+
+<h2>Yeni Ürün</h2>
+
+<div class="form-grid">
+
+
+<div class="form-group">
+<label>Firma</label>
+
+<select id="firma_id">
+<option value="">Firma seçin</option>
+</select>
+
+</div>
+
+
+<div class="form-group">
+<label>Kategori</label>
+
+<select id="kategori_id">
+<option value="">Kategori seçin</option>
+</select>
+
+</div>
+
+
+<div class="form-group">
+<label>Birim</label>
+
+<select id="birim_id">
+<option value="">Birim seçin</option>
+</select>
+
+</div>
+
+
+<div class="form-group">
+<label>Ürün Kodu</label>
+
+<input
+id="kod"
+type="text"
+placeholder="Örn: 100001"
+>
+
+</div>
+
+
+<div class="form-group">
+<label>Ürün Adı</label>
+
+<input
+id="ad"
+type="text"
+placeholder="Ürün adı"
+>
+
+</div>
+
+
+<div class="form-group">
+<label>Marka</label>
+
+<input
+id="marka"
+type="text"
+placeholder="Marka"
+>
+
+</div>
+
+
+<div class="form-group">
+<label>Alış Fiyatı</label>
+
+<input
+id="alis_fiyati"
+type="number"
+step="0.01"
+value="0"
+>
+
+</div>
+
+
+<div class="form-group">
+<label>Satış Fiyatı</label>
+
+<input
+id="satis_fiyati"
+type="number"
+step="0.01"
+value="0"
+>
+
+</div>
+
+
+<div class="form-group">
+<label>Minimum Stok</label>
+
+<input
+id="minimum_stok"
+type="number"
+step="0.01"
+value="0"
+>
+
+</div>
+
+
+<div class="form-group">
+<label>KDV Oranı (%)</label>
+
+<input
+id="kdv_orani"
+type="number"
+step="0.01"
+value="0"
+>
+
+</div>
+
+
+<div class="form-group checkbox">
+
+<input
+id="tartili_urun"
+type="checkbox"
+>
+
+<label for="tartili_urun">
+⚖️ Tartılı Ürün
+</label>
+
+</div>
+
+
+</div>
+
+
+<div class="actions">
+
+<button
+class="btn btn-primary"
+onclick="saveProduct()"
+>
+💾 Ürünü Kaydet
+</button>
+
+<button
+class="btn"
+onclick="toggleForm()"
+>
+İptal
+</button>
+
+</div>
+
+
+<div
+id="message"
+class="message"
+></div>
+
+</div>
+
+
+<!-- ============================= -->
+<!-- ÜRÜN LİSTESİ -->
+<!-- ============================= -->
+
+<div class="panel">
+
+<div style="
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:15px;
+gap:10px;
+flex-wrap:wrap;
+">
+
+<h2 style="margin:0">
+Ürünler
+</h2>
+
+<div id="productCount">
+0 ürün
+</div>
+
+</div>
+
+
+<div class="table-wrap">
+
+<table>
+
+<thead>
+
+<tr>
+<th>ID</th>
+<th>Kod</th>
+<th>Ürün</th>
+<th>Marka</th>
+<th>Kategori</th>
+<th>Birim</th>
+<th>Alış</th>
+<th>Satış</th>
+<th>Min. Stok</th>
+<th>Durum</th>
+</tr>
+
+</thead>
+
+<tbody id="productRows">
+
+<tr>
+<td
+colspan="10"
+class="loading"
+>
+Ürünler yükleniyor...
+</td>
+</tr>
+
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+
+</main>
+
+
+<script>
+
+const API = "";
+
+
+/* ================================
+   FORM AÇ / KAPAT
+================================ */
+
+function toggleForm(){
+
+    const form =
+        document.getElementById("productForm");
+
+    if(form.style.display === "none"){
+        form.style.display = "block";
+        window.scrollTo({
+            top:0,
+            behavior:"smooth"
+        });
+    }else{
+        form.style.display = "none";
+    }
+
+}
+
+
+/* ================================
+   VERİ YÜKLEME
+================================ */
+
+async function loadData(){
+
+    await Promise.all([
+        loadCompanies(),
+        loadCategories(),
+        loadUnits(),
+        loadProducts()
+    ]);
+
+}
+
+
+/* ================================
+   FİRMALAR
+================================ */
+
+async function loadCompanies(){
+
+    try{
+
+        const response =
+            await fetch(API + "/api/firmalar");
+
+        const data =
+            await response.json();
+
+        const select =
+            document.getElementById("firma_id");
+
+        select.innerHTML =
+            '<option value="">Firma seçin</option>';
+
+        data.forEach(item => {
+
+            select.innerHTML += `
+                <option value="${item.id}">
+                    ${esc(item.ad)}
+                </option>
+            `;
+
+        });
+
+    }catch(error){
+
+        console.error("Firmalar:",error);
+
+    }
+
+}
+
+
+/* ================================
+   KATEGORİLER
+================================ */
+
+async function loadCategories(){
+
+    try{
+
+        const response =
+            await fetch(API + "/api/kategoriler");
+
+        const data =
+            await response.json();
+
+        const select =
+            document.getElementById("kategori_id");
+
+        select.innerHTML =
+            '<option value="">Kategori seçin</option>';
+
+        data.forEach(item => {
+
+            select.innerHTML += `
+                <option value="${item.id}">
+                    ${esc(item.ad)}
+                </option>
+            `;
+
+        });
+
+    }catch(error){
+
+        console.error("Kategoriler:",error);
+
+    }
+
+}
+
+
+/* ================================
+   BİRİMLER
+================================ */
+
+async function loadUnits(){
+
+    try{
+
+        const response =
+            await fetch(API + "/api/birimler");
+
+        const data =
+            await response.json();
+
+        const select =
+            document.getElementById("birim_id");
+
+        select.innerHTML =
+            '<option value="">Birim seçin</option>';
+
+        data.forEach(item => {
+
+            select.innerHTML += `
+                <option value="${item.id}">
+                    ${esc(item.ad)} (${esc(item.sembol)})
+                </option>
+            `;
+
+        });
+
+    }catch(error){
+
+        console.error("Birimler:",error);
+
+    }
+
+}
+
+
+/* ================================
+   ÜRÜNLER
+================================ */
+
+async function loadProducts(){
+
+    const rows =
+        document.getElementById("productRows");
+
+    try{
+
+        const response =
+            await fetch(API + "/api/urunler");
+
+        if(!response.ok){
+            throw new Error("Ürün API hatası");
+        }
+
+        const data =
+            await response.json();
+
+        document.getElementById("productCount")
+            .textContent =
+            data.length + " ürün";
+
+
+        if(!data.length){
+
+            rows.innerHTML = `
+                <tr>
+                    <td colspan="10" class="empty">
+                        Henüz ürün bulunmuyor.
+                    </td>
+                </tr>
+            `;
+
+            return;
+        }
+
+
+        rows.innerHTML =
+            data.map(item => `
+
+                <tr>
+
+                    <td>${item.id}</td>
+
+                    <td>
+                        <strong>
+                            ${esc(item.kod)}
+                        </strong>
+                    </td>
+
+                    <td>
+                        ${esc(item.ad)}
+                    </td>
+
+                    <td>
+                        ${esc(item.marka || "-")}
+                    </td>
+
+                    <td>
+                        ${esc(item.kategori_adi || "-")}
+                    </td>
+
+                    <td>
+                        ${esc(item.birim_sembol || "-")}
+                    </td>
+
+                    <td>
+                        ${money(item.alis_fiyati)}
+                    </td>
+
+                    <td>
+                        ${money(item.satis_fiyati)}
+                    </td>
+
+                    <td>
+                        ${Number(item.minimum_stok || 0)}
+                    </td>
+
+                    <td>
+                        <span class="badge">
+                            Aktif
+                        </span>
+                    </td>
+
+                </tr>
+
+            `).join("");
+
+
+    }catch(error){
+
+        console.error(error);
+
+        rows.innerHTML = `
+            <tr>
+                <td colspan="10" class="empty">
+                    ❌ Ürünler yüklenemedi.
+                </td>
+            </tr>
+        `;
+
+    }
+
+}
+
+
+/* ================================
+   ÜRÜN KAYDET
+================================ */
+
+async function saveProduct(){
+
+    const firma_id =
+        document.getElementById("firma_id").value;
+
+    const birim_id =
+        document.getElementById("birim_id").value;
+
+    const kod =
+        document.getElementById("kod").value.trim();
+
+    const ad =
+        document.getElementById("ad").value.trim();
+
+
+    if(!firma_id){
+
+        showMessage(
+            "Firma seçmelisiniz.",
+            false
+        );
+
+        return;
+    }
+
+
+    if(!birim_id){
+
+        showMessage(
+            "Birim seçmelisiniz.",
+            false
+        );
+
+        return;
+    }
+
+
+    if(!kod){
+
+        showMessage(
+            "Ürün kodu zorunludur.",
+            false
+        );
+
+        return;
+    }
+
+
+    if(!ad){
+
+        showMessage(
+            "Ürün adı zorunludur.",
+            false
+        );
+
+        return;
+    }
+
+
+    const data = {
+
+        firma_id:Number(firma_id),
+
+        kategori_id:
+            document.getElementById("kategori_id").value
+            ? Number(
+                document.getElementById("kategori_id").value
+              )
+            : null,
+
+        birim_id:Number(birim_id),
+
+        kod:kod,
+
+        ad:ad,
+
+        marka:
+            document.getElementById("marka").value.trim()
+            || null,
+
+        alis_fiyati:
+            Number(
+                document.getElementById("alis_fiyati").value
+            ) || 0,
+
+        satis_fiyati:
+            Number(
+                document.getElementById("satis_fiyati").value
+            ) || 0,
+
+        minimum_stok:
+            Number(
+                document.getElementById("minimum_stok").value
+            ) || 0,
+
+        kdv_orani:
+            Number(
+                document.getElementById("kdv_orani").value
+            ) || 0,
+
+        tartili_urun:
+            document.getElementById("tartili_urun").checked
+    };
+
+
+    try{
+
+        const response =
+            await fetch(API + "/api/urunler",{
+
+                method:"POST",
+
+                headers:{
+                    "content-type":"application/json"
+                },
+
+                body:JSON.stringify(data)
+
+            });
+
+
+        const result =
+            await response.json();
+
+
+        if(!response.ok){
+
+            throw new Error(
+                result.error ||
+                "Ürün kaydedilemedi."
+            );
+
+        }
+
+
+        showMessage(
+            "✓ Ürün başarıyla kaydedildi.",
+            true
+        );
+
+
+        clearForm();
+
+        await loadProducts();
+
+
+    }catch(error){
+
+        showMessage(
+            "❌ " + error.message,
+            false
+        );
+
+    }
+
+}
+
+
+/* ================================
+   FORM TEMİZLE
+================================ */
+
+function clearForm(){
+
+    document.getElementById("firma_id").value = "";
+
+    document.getElementById("kategori_id").value = "";
+
+    document.getElementById("birim_id").value = "";
+
+    document.getElementById("kod").value = "";
+
+    document.getElementById("ad").value = "";
+
+    document.getElementById("marka").value = "";
+
+    document.getElementById("alis_fiyati").value = "0";
+
+    document.getElementById("satis_fiyati").value = "0";
+
+    document.getElementById("minimum_stok").value = "0";
+
+    document.getElementById("kdv_orani").value = "0";
+
+    document.getElementById("tartili_urun").checked = false;
+
+}
+
+
+/* ================================
+   MESAJ
+================================ */
+
+function showMessage(text,success){
+
+    const box =
+        document.getElementById("message");
+
+    box.textContent = text;
+
+    box.className =
+        "message " +
+        (success ? "success" : "error");
+
+    box.style.display = "block";
+
+}
+
+
+/* ================================
+   PARA
+================================ */
+
+function money(value){
+
+    return Number(value || 0)
+        .toLocaleString("tr-TR",{
+            minimumFractionDigits:2,
+            maximumFractionDigits:2
+        }) + " ₺";
+
+}
+
+
+/* ================================
+   GÜVENLİ HTML
+================================ */
+
+function esc(value){
+
+    return String(value ?? "")
+        .replace(/[&<>"']/g, function(char){
+
+            return {
+                "&":"&amp;",
+                "<":"&lt;",
+                ">":"&gt;",
+                '"':"&quot;",
+                "'":"&#39;"
+            }[char];
+
+        });
+
+}
+
+
+/* ================================
+   BAŞLAT
+================================ */
+
+loadData();
+
+</script>
+
+</body>
+</html>
