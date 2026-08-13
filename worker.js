@@ -221,7 +221,7 @@ if (request.method === "POST" && path === "/api/urunler") {
         satis_fiyati,
         minimum_stok,
         kdv_orani,
-        tartili_urun,
+        terazi_urunu,
         aktif
       )
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
