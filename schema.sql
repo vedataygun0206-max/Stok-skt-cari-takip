@@ -1,1140 +1,748 @@
-const json = (data, status = 200) =>
-  new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      "content-type": "application/json; charset=utf-8"
-    }
-  });
-
-function clean(value) {
-  return value === undefined || value === null ? "" : String(value).trim();
-}
-
-export default {
-  async fetch(request, env) {
-    const url = new URL(request.url);
-    const path = url.pathname;
-
-    try {
-
-      // =====================================================
-      // HEALTH
-      // =====================================================
-
-      if (request.method === "GET" && path === "/api/health") {
-        return json({
-          ok: true,
-          service: "stok-skt-cari-takip",
-          time: new Date().toISOString()
-        });
-      }
-
-
-      // =====================================================
-      // DASHBOARD
-      // =====================================================
-
-      if (request.method === "GET" && path === "/api/dashboard") {
-
-        const products = await env.DB
-          .prepare("SELECT COUNT(*) AS count FROM products WHERE is_active = 1")
-          .first();
-
-        const companies = await env.DB
-          .prepare("SELECT COUNT(*) AS count FROM companies WHERE is_active = 1")
-          .first();
-
-        const branches = await env.DB
-          .prepare("SELECT COUNT(*) AS count FROM branches WHERE is_active = 1")
-          .first();
-
-        const accounts = await env.DB
-          .prepare("SELECT COALESCE(SUM(balance),0) AS balance FROM accounts WHERE is_active = 1")
-          .first();
-
-        return json({
-          products: products?.count || 0,
-          companies: companies?.count || 0,
-          branches: branches?.count || 0,
-          balance: accounts?.balance || 0
-        });
-      }
-
-
-      // =====================================================
-      // COMPANIES - LIST
-      // =====================================================
-
-      if (request.method === "GET" && path === "/api/companies") {
-
-        const { results } = await env.DB.prepare(`
-          SELECT
-            id,
-            name,
-            tax_no,
-            phone,
-            email,
-            address,
-            is_active,
-            created_at
-          FROM companies
-          ORDER BY id DESC
-        `).all();
-
-        return json(results);
-      }
-
-
-      // =====================================================
-      // COMPANIES - CREATE
-      // =====================================================
-
-      if (request.method === "POST" && path === "/api/companies") {
-
-        const body = await request.json();
-
-        const name = clean(body.name);
-
-        if (!name) {
-          return json({
-            error: "Firma adı zorunludur."
-          }, 400);
-        }
-
-        const result = await env.DB.prepare(`
-          INSERT INTO companies
-          (name, tax_no, phone, email, address, is_active)
-          VALUES (?, ?, ?, ?, ?, 1)
-        `).bind(
-          name,
-          clean(body.tax_no) || null,
-          clean(body.phone) || null,
-          clean(body.email) || null,
-          clean(body.address) || null
-        ).run();
-
-        return json({
-          ok: true,
-          id: result.meta.last_row_id,
-          message: "Firma başarıyla eklendi."
-        }, 201);
-      }
-
-
-      // =====================================================
-      // COMPANIES - UPDATE
-      // =====================================================
-
-      if (
-        request.method === "PUT" &&
-        path.startsWith("/api/companies/")
-      ) {
-
-        const id = Number(path.split("/").pop());
-
-        if (!Number.isInteger(id)) {
-          return json({
-            error: "Geçersiz firma ID."
-          }, 400);
-        }
-
-        const body = await request.json();
-
-        const name = clean(body.name);
-
-        if (!name) {
-          return json({
-            error: "Firma adı zorunludur."
-          }, 400);
-        }
-
-        await env.DB.prepare(`
-          UPDATE companies
-          SET
-            name = ?,
-            tax_no = ?,
-            phone = ?,
-            email = ?,
-            address = ?
-          WHERE id = ?
-        `).bind(
-          name,
-          clean(body.tax_no) || null,
-          clean(body.phone) || null,
-          clean(body.email) || null,
-          clean(body.address) || null,
-          id
-        ).run();
-
-        return json({
-          ok: true,
-          message: "Firma güncellendi."
-        });
-      }
-
-
-      // =====================================================
-      // COMPANIES - DELETE / PASSIVE
-      // =====================================================
-
-      if (
-        request.method === "DELETE" &&
-        path.startsWith("/api/companies/")
-      ) {
-
-        const id = Number(path.split("/").pop());
-
-        if (!Number.isInteger(id)) {
-          return json({
-            error: "Geçersiz firma ID."
-          }, 400);
-        }
-
-        await env.DB.prepare(`
-          UPDATE companies
-          SET is_active = 0
-          WHERE id = ?
-        `).bind(id).run();
-
-        return json({
-          ok: true,
-          message: "Firma pasif hale getirildi."
-        });
-      }
-
-
-      // =====================================================
-      // PRODUCTS - LIST
-      // =====================================================
-
-      if (request.method === "GET" && path === "/api/products") {
-
-        const { results } = await env.DB.prepare(`
-          SELECT
-            p.*,
-            c.name AS category_name,
-            u.symbol AS unit_symbol
-          FROM products p
-          LEFT JOIN categories c ON c.id = p.category_id
-          LEFT JOIN units u ON u.id = p.unit_id
-          WHERE p.is_active = 1
-          ORDER BY p.id DESC
-        `).all();
-
-        return json(results);
-      }
-
-
-      // =====================================================
-      // PRODUCTS - CREATE
-      // =====================================================
-
-      if (request.method === "POST" && path === "/api/products") {
-
-        const body = await request.json();
-
-        if (
-          !body.company_id ||
-          !body.unit_id ||
-          !body.code ||
-          !body.name
-        ) {
-          return json({
-            error: "company_id, unit_id, code ve name zorunludur."
-          }, 400);
-        }
-
-        const result = await env.DB.prepare(`
-          INSERT INTO products
-          (
-            company_id,
-            category_id,
-            unit_id,
-            code,
-            name,
-            brand,
-            purchase_price,
-            sale_price,
-            min_stock,
-            vat_rate,
-            scale_product
-          )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).bind(
-          body.company_id,
-          body.category_id ?? null,
-          body.unit_id,
-          body.code,
-          body.name,
-          body.brand ?? null,
-          body.purchase_price ?? 0,
-          body.sale_price ?? 0,
-          body.min_stock ?? 0,
-          body.vat_rate ?? 0,
-          body.scale_product ? 1 : 0
-        ).run();
-
-        return json({
-          ok: true,
-          id: result.meta.last_row_id
-        }, 201);
-      }
-
-
-      // =====================================================
-      // HTML PANEL
-      // =====================================================
-
-      return new Response(HTML, {
-        headers: {
-          "content-type": "text/html; charset=utf-8"
-        }
-      });
-
-    } catch (error) {
-
-      return json({
-        ok: false,
-        error: error.message
-      }, 500);
-
-    }
-  }
-};
-
-
-const HTML = `<!doctype html>
-<html lang="tr">
-
-<head>
-
-<meta charset="utf-8">
-
-<meta
-  name="viewport"
-  content="width=device-width,initial-scale=1"
->
-
-<title>SKT Stok & Cari Takip</title>
-
-<style>
-
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #f4f6f8;
-  color: #17202a;
-}
-
-header {
-  background: #17202a;
-  color: white;
-  padding: 18px 22px;
-  font-size: 21px;
-  font-weight: 700;
-}
-
-nav {
-  background: white;
-  border-bottom: 1px solid #ddd;
-  padding: 10px;
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-}
-
-nav button {
-  border: 0;
-  background: #eef1f4;
-  padding: 10px 15px;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-nav button.active {
-  background: #17202a;
-  color: white;
-}
-
-main {
-  max-width: 1200px;
-  margin: auto;
-  padding: 20px;
-}
-
-.grid {
-  display: grid;
-  grid-template-columns:
-    repeat(auto-fit,minmax(180px,1fr));
-  gap: 14px;
-}
-
-.card {
-  background: white;
-  border-radius: 12px;
-  padding: 18px;
-  box-shadow: 0 2px 10px #00000012;
-}
-
-.card b {
-  display: block;
-  font-size: 28px;
-  margin-top: 8px;
-}
-
-section {
-  margin-top: 22px;
-}
-
-.title {
-  font-size: 20px;
-  font-weight: 700;
-  margin-bottom: 12px;
-}
-
-.panel {
-  background: white;
-  padding: 18px;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px #00000012;
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns:
-    repeat(auto-fit,minmax(180px,1fr));
-  gap: 10px;
-}
-
-input,
-textarea {
-  width: 100%;
-  padding: 11px;
-  border: 1px solid #d6dbe0;
-  border-radius: 8px;
-  font-size: 15px;
-}
-
-textarea {
-  min-height: 80px;
-}
-
-.btn {
-  border: 0;
-  border-radius: 8px;
-  padding: 11px 16px;
-  cursor: pointer;
-  font-weight: 700;
-}
-
-.btn-primary {
-  background: #17202a;
-  color: white;
-}
-
-.btn-danger {
-  background: #c62828;
-  color: white;
-}
-
-.actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 12px;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: white;
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-th,
-td {
-  padding: 11px;
-  border-bottom: 1px solid #eee;
-  text-align: left;
-}
-
-th {
-  background: #f0f2f4;
-}
-
-.badge {
-  padding: 5px 8px;
-  border-radius: 6px;
-  background: #e8f5e9;
-}
-
-.hidden {
-  display: none;
-}
-
-.message {
-  margin-top: 10px;
-  padding: 10px;
-  border-radius: 8px;
-  background: #eef5ff;
-}
-
-@media(max-width:600px) {
-
-  main {
-    padding: 12px;
-  }
-
-  table {
-    font-size: 13px;
-  }
-
-  th,
-  td {
-    padding: 8px;
-  }
-
-}
-
-</style>
-
-</head>
-
-<body>
-
-<header>
-📦 SKT Stok & Cari Takip — Yönetim Paneli
-</header>
-
-
-<nav>
-
-<button
-  id="navDashboard"
-  class="active"
-  onclick="showPage('dashboard')"
->
-Ana Sayfa
-</button>
-
-<button
-  id="navCompanies"
-  onclick="showPage('companies')"
->
-🏢 Firmalar
-</button>
-
-<button
-  onclick="alert('Şube modülü bir sonraki aşamada açılacak.')"
->
-🏪 Şubeler
-</button>
-
-<button
-  onclick="alert('Ürün modülü bir sonraki aşamada açılacak.')"
->
-📦 Ürünler
-</button>
-
-</nav>
-
-
-<main>
-
-
-<!-- =====================================================
-     DASHBOARD
-===================================================== -->
-
-<div id="dashboardPage">
-
-<div class="grid">
-
-<div class="card">
-Firma Sayısı
-<b id="companiesCount">0</b>
-</div>
-
-<div class="card">
-Şube Sayısı
-<b id="branchesCount">0</b>
-</div>
-
-<div class="card">
-Ürün Sayısı
-<b id="productsCount">0</b>
-</div>
-
-<div class="card">
-Cari Bakiye
-<b id="balance">0,00 ₺</b>
-</div>
-
-</div>
-
-
-<section>
-
-<div class="title">
-Sistem Durumu
-</div>
-
-<div class="panel">
-
-<div>
-🟢 D1 Veritabanı bağlantısı aktif
-</div>
-
-<div style="margin-top:8px">
-🟢 Worker aktif
-</div>
-
-<div style="margin-top:8px">
-🟢 Yönetim paneli aktif
-</div>
-
-</div>
-
-</section>
-
-</div>
-
-
-<!-- =====================================================
-     COMPANIES
-===================================================== -->
-
-<div
-  id="companiesPage"
-  class="hidden"
->
-
-<section>
-
-<div class="title">
-🏢 Firma Yönetimi
-</div>
-
-<div class="panel">
-
-<div class="form-grid">
-
-<input
-  id="companyName"
-  placeholder="Firma adı *"
->
-
-<input
-  id="companyTax"
-  placeholder="Vergi No"
->
-
-<input
-  id="companyPhone"
-  placeholder="Telefon"
->
-
-<input
-  id="companyEmail"
-  placeholder="E-posta"
->
-
-</div>
-
-<div style="margin-top:10px">
-
-<textarea
-  id="companyAddress"
-  placeholder="Adres"
-></textarea>
-
-</div>
-
-<div class="actions">
-
-<button
-  class="btn btn-primary"
-  onclick="saveCompany()"
->
-➕ Firma Ekle
-</button>
-
-<button
-  class="btn"
-  onclick="clearCompanyForm()"
->
-Temizle
-</button>
-
-</div>
-
-<div
-  id="companyMessage"
-  class="message hidden"
-></div>
-
-</div>
-
-</section>
-
-
-<section>
-
-<div class="title">
-Firma Listesi
-</div>
-
-<div class="panel">
-
-<input
-  id="companySearch"
-  placeholder="Firma ara..."
-  oninput="filterCompanies()"
->
-
-</div>
-
-<br>
-
-<table>
-
-<thead>
-
-<tr>
-<th>ID</th>
-<th>Firma</th>
-<th>Vergi No</th>
-<th>Telefon</th>
-<th>E-posta</th>
-<th>Durum</th>
-<th>İşlem</th>
-</tr>
-
-</thead>
-
-<tbody id="companyRows">
-
-<tr>
-<td colspan="7">
-Yükleniyor...
-</td>
-</tr>
-
-</tbody>
-
-</table>
-
-</section>
-
-</div>
-
-</main>
-
-
-<script>
-
-let companies = [];
-
-
-// =====================================================
-// PAGE
-// =====================================================
-
-function showPage(page) {
-
-  document
-    .getElementById("dashboardPage")
-    .classList.toggle("hidden", page !== "dashboard");
-
-  document
-    .getElementById("companiesPage")
-    .classList.toggle("hidden", page !== "companies");
+PRAGMA foreign_keys = ON;
+
+-- =========================================================
+-- 1. FİRMA / ŞUBE / KULLANICI / YETKİ
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS firmalar (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ad TEXT NOT NULL,
+    vergi_no TEXT,
+    telefon TEXT,
+    email TEXT,
+    adres TEXT,
+    aktif INTEGER NOT NULL DEFAULT 1,
+    olusturma_tarihi TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS subeler (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    firma_id INTEGER NOT NULL,
+    ad TEXT NOT NULL,
+    kod TEXT NOT NULL,
+    telefon TEXT,
+    adres TEXT,
+    aktif INTEGER NOT NULL DEFAULT 1,
+    olusturma_tarihi TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    UNIQUE(firma_id, kod),
+
+    FOREIGN KEY(firma_id)
+        REFERENCES firmalar(id)
+);
+
+CREATE TABLE IF NOT EXISTS roller (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ad TEXT NOT NULL UNIQUE,
+    aciklama TEXT
+);
+
+CREATE TABLE IF NOT EXISTS yetkiler (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    kod TEXT NOT NULL UNIQUE,
+    ad TEXT NOT NULL,
+    aciklama TEXT
+);
+
+CREATE TABLE IF NOT EXISTS rol_yetkileri (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    rol_id INTEGER NOT NULL,
+    yetki_id INTEGER NOT NULL,
+
+    UNIQUE(rol_id, yetki_id),
+
+    FOREIGN KEY(rol_id)
+        REFERENCES roller(id),
+
+    FOREIGN KEY(yetki_id)
+        REFERENCES yetkiler(id)
+);
+
+CREATE TABLE IF NOT EXISTS kullanicilar (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    firma_id INTEGER NOT NULL,
+    sube_id INTEGER,
+    rol_id INTEGER NOT NULL,
+    ad_soyad TEXT NOT NULL,
+    kullanici_adi TEXT NOT NULL UNIQUE,
+    sifre_hash TEXT NOT NULL,
+    aktif INTEGER NOT NULL DEFAULT 1,
+    son_giris TEXT,
+    olusturma_tarihi TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY(firma_id)
+        REFERENCES firmalar(id),
+
+    FOREIGN KEY(sube_id)
+        REFERENCES subeler(id),
+
+    FOREIGN KEY(rol_id)
+        REFERENCES roller(id)
+);
+
+-- =========================================================
+-- 2. ÜRÜN / KATEGORİ / BİRİM / BARKOD
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS kategoriler (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    firma_id INTEGER NOT NULL,
+    ad TEXT NOT NULL,
+    ust_kategori_id INTEGER,
+    aktif INTEGER NOT NULL DEFAULT 1,
+
+    UNIQUE(firma_id, ad),
+
+    FOREIGN KEY(firma_id)
+        REFERENCES firmalar(id),
+
+    FOREIGN KEY(ust_kategori_id)
+        REFERENCES kategoriler(id)
+);
 
-  document
-    .getElementById("navDashboard")
-    .classList.toggle("active", page === "dashboard");
+CREATE TABLE IF NOT EXISTS birimler (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ad TEXT NOT NULL UNIQUE,
+    sembol TEXT NOT NULL UNIQUE
+);
 
-  document
-    .getElementById("navCompanies")
-    .classList.toggle("active", page === "companies");
+CREATE TABLE IF NOT EXISTS urunler (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    firma_id INTEGER NOT NULL,
+    kategori_id INTEGER,
+    birim_id INTEGER NOT NULL,
 
-  if (page === "companies") {
-    loadCompanies();
-  }
-}
+    urun_kodu TEXT NOT NULL,
+    ad TEXT NOT NULL,
+    marka TEXT,
 
+    alis_fiyati REAL NOT NULL DEFAULT 0,
+    satis_fiyati REAL NOT NULL DEFAULT 0,
 
-// =====================================================
-// DASHBOARD
-// =====================================================
+    minimum_stok REAL NOT NULL DEFAULT 0,
+    maksimum_stok REAL NOT NULL DEFAULT 0,
 
-async function loadDashboard() {
+    kdv_orani REAL NOT NULL DEFAULT 0,
 
-  try {
+    tartili_urun INTEGER NOT NULL DEFAULT 0,
+    aktif INTEGER NOT NULL DEFAULT 1,
 
-    const r =
-      await fetch("/api/dashboard");
+    olusturma_tarihi TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    const data =
-      await r.json();
+    UNIQUE(firma_id, urun_kodu),
 
-    document
-      .getElementById("companiesCount")
-      .textContent = data.companies || 0;
+    FOREIGN KEY(firma_id)
+        REFERENCES firmalar(id),
 
-    document
-      .getElementById("branchesCount")
-      .textContent = data.branches || 0;
+    FOREIGN KEY(kategori_id)
+        REFERENCES kategoriler(id),
 
-    document
-      .getElementById("productsCount")
-      .textContent = data.products || 0;
+    FOREIGN KEY(birim_id)
+        REFERENCES birimler(id)
+);
 
-    document
-      .getElementById("balance")
-      .textContent =
-      Number(data.balance || 0)
-      .toLocaleString("tr-TR", {
-        minimumFractionDigits: 2
-      }) + " ₺";
+CREATE TABLE IF NOT EXISTS barkodlar (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    urun_id INTEGER NOT NULL,
+    barkod TEXT NOT NULL UNIQUE,
+    barkod_tipi TEXT NOT NULL DEFAULT 'EAN13',
+    birincil INTEGER NOT NULL DEFAULT 0,
 
-  } catch (e) {
+    FOREIGN KEY(urun_id)
+        REFERENCES urunler(id)
+);
 
-    console.error(e);
+-- =========================================================
+-- 3. DEPO / PARTİ / SKT / STOK
+-- =========================================================
 
-  }
-}
+CREATE TABLE IF NOT EXISTS depolar (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sube_id INTEGER NOT NULL,
+    ad TEXT NOT NULL,
+    kod TEXT NOT NULL,
+    aktif INTEGER NOT NULL DEFAULT 1,
 
+    UNIQUE(sube_id, kod),
 
-// =====================================================
-// COMPANIES
-// =====================================================
+    FOREIGN KEY(sube_id)
+        REFERENCES subeler(id)
+);
 
-async function loadCompanies() {
+CREATE TABLE IF NOT EXISTS partiler (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    urun_id INTEGER NOT NULL,
+    depo_id INTEGER NOT NULL,
 
-  try {
+    parti_no TEXT,
+    uretim_tarihi TEXT,
+    son_kullanma_tarihi TEXT,
 
-    const r =
-      await fetch("/api/companies");
+    miktar REAL NOT NULL DEFAULT 0,
+    alis_maliyeti REAL NOT NULL DEFAULT 0,
 
-    companies =
-      await r.json();
+    olusturma_tarihi TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    renderCompanies(companies);
+    FOREIGN KEY(urun_id)
+        REFERENCES urunler(id),
 
-  } catch (e) {
+    FOREIGN KEY(depo_id)
+        REFERENCES depolar(id)
+);
 
-    document
-      .getElementById("companyRows")
-      .innerHTML =
-      '<tr><td colspan="7">Firmalar yüklenemedi.</td></tr>';
+CREATE TABLE IF NOT EXISTS stok_hareketleri (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-  }
-}
+    urun_id INTEGER NOT NULL,
+    parti_id INTEGER,
+    depo_id INTEGER NOT NULL,
 
+    hareket_tipi TEXT NOT NULL,
+    miktar REAL NOT NULL,
 
-function renderCompanies(list) {
+    birim_maliyet REAL NOT NULL DEFAULT 0,
 
-  const rows =
-    document.getElementById("companyRows");
+    referans_tipi TEXT,
+    referans_id INTEGER,
 
-  if (!list.length) {
+    kullanici_id INTEGER,
 
-    rows.innerHTML =
-      '<tr><td colspan="7">Henüz firma yok.</td></tr>';
+    aciklama TEXT,
 
-    return;
-  }
+    olusturma_tarihi TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-  rows.innerHTML =
-    list.map(c => `
+    FOREIGN KEY(urun_id)
+        REFERENCES urunler(id),
 
-      <tr>
+    FOREIGN KEY(parti_id)
+        REFERENCES partiler(id),
 
-        <td>${esc(c.id)}</td>
+    FOREIGN KEY(depo_id)
+        REFERENCES depolar(id),
 
-        <td><b>${esc(c.name)}</b></td>
+    FOREIGN KEY(kullanici_id)
+        REFERENCES kullanicilar(id)
+);
 
-        <td>${esc(c.tax_no || "-")}</td>
+CREATE TABLE IF NOT EXISTS mevcut_stoklar (
+    urun_id INTEGER NOT NULL,
+    depo_id INTEGER NOT NULL,
 
-        <td>${esc(c.phone || "-")}</td>
+    miktar REAL NOT NULL DEFAULT 0,
 
-        <td>${esc(c.email || "-")}</td>
+    PRIMARY KEY(urun_id, depo_id),
 
-        <td>
-          ${
-            c.is_active
-              ? '<span class="badge">Aktif</span>'
-              : 'Pasif'
-          }
-        </td>
+    FOREIGN KEY(urun_id)
+        REFERENCES urunler(id),
 
-        <td>
+    FOREIGN KEY(depo_id)
+        REFERENCES depolar(id)
+);
 
-          ${
-            c.is_active
-              ? `
-                <button
-                  class="btn btn-danger"
-                  onclick="deactivateCompany(${c.id})"
-                >
-                  Pasifleştir
-                </button>
-              `
-              : ""
-          }
+-- =========================================================
+-- 4. CARİ HESAPLAR
+-- =========================================================
 
-        </td>
+CREATE TABLE IF NOT EXISTS cariler (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-      </tr>
+    firma_id INTEGER NOT NULL,
 
-    `).join("");
+    cari_tipi TEXT NOT NULL,
+    ad TEXT NOT NULL,
 
-}
+    vergi_no TEXT,
+    telefon TEXT,
+    email TEXT,
+    adres TEXT,
 
+    bakiye REAL NOT NULL DEFAULT 0,
 
-// =====================================================
-// SAVE COMPANY
-// =====================================================
+    aktif INTEGER NOT NULL DEFAULT 1,
 
-async function saveCompany() {
+    olusturma_tarihi TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-  const body = {
+    FOREIGN KEY(firma_id)
+        REFERENCES firmalar(id)
+);
 
-    name:
-      document
-        .getElementById("companyName")
-        .value,
+CREATE TABLE IF NOT EXISTS cari_hareketleri (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-    tax_no:
-      document
-        .getElementById("companyTax")
-        .value,
+    cari_id INTEGER NOT NULL,
 
-    phone:
-      document
-        .getElementById("companyPhone")
-        .value,
+    hareket_tipi TEXT NOT NULL,
 
-    email:
-      document
-        .getElementById("companyEmail")
-        .value,
+    borc REAL NOT NULL DEFAULT 0,
+    alacak REAL NOT NULL DEFAULT 0,
 
-    address:
-      document
-        .getElementById("companyAddress")
-        .value
+    bakiye REAL NOT NULL DEFAULT 0,
 
-  };
+    referans_tipi TEXT,
+    referans_id INTEGER,
 
+    aciklama TEXT,
 
-  if (!body.name.trim()) {
+    kullanici_id INTEGER,
 
-    showMessage(
-      "Firma adı zorunludur."
-    );
+    olusturma_tarihi TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    return;
-  }
+    FOREIGN KEY(cari_id)
+        REFERENCES cariler(id),
 
+    FOREIGN KEY(kullanici_id)
+        REFERENCES kullanicilar(id)
+);
 
-  try {
+-- =========================================================
+-- 5. SATIN ALMA
+-- =========================================================
 
-    const r =
-      await fetch(
-        "/api/companies",
-        {
-          method: "POST",
-          headers: {
-            "content-type":
-              "application/json"
-          },
-          body:
-            JSON.stringify(body)
-        }
-      );
+CREATE TABLE IF NOT EXISTS satin_alma_siparisleri (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-    const data =
-      await r.json();
+    firma_id INTEGER NOT NULL,
+    sube_id INTEGER NOT NULL,
+    cari_id INTEGER,
 
-    if (!r.ok) {
+    siparis_no TEXT NOT NULL UNIQUE,
 
-      showMessage(
-        data.error || "Firma eklenemedi."
-      );
+    durum TEXT NOT NULL DEFAULT 'BEKLIYOR',
 
-      return;
-    }
+    toplam_tutar REAL NOT NULL DEFAULT 0,
 
+    siparis_tarihi TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    showMessage(
-      "✅ Firma başarıyla eklendi."
-    );
+    kullanici_id INTEGER,
 
-    clearCompanyForm();
+    FOREIGN KEY(firma_id)
+        REFERENCES firmalar(id),
 
-    await loadCompanies();
+    FOREIGN KEY(sube_id)
+        REFERENCES subeler(id),
 
-    await loadDashboard();
+    FOREIGN KEY(cari_id)
+        REFERENCES cariler(id),
 
-  } catch (e) {
+    FOREIGN KEY(kullanici_id)
+        REFERENCES kullanicilar(id)
+);
 
-    showMessage(
-      "Sunucu bağlantı hatası."
-    );
+CREATE TABLE IF NOT EXISTS satin_alma_detaylari (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-  }
+    siparis_id INTEGER NOT NULL,
+    urun_id INTEGER NOT NULL,
 
-}
+    miktar REAL NOT NULL,
+    birim_fiyat REAL NOT NULL DEFAULT 0,
+    kdv_orani REAL NOT NULL DEFAULT 0,
 
+    toplam REAL NOT NULL DEFAULT 0,
 
-// =====================================================
-// DEACTIVATE
-// =====================================================
+    FOREIGN KEY(siparis_id)
+        REFERENCES satin_alma_siparisleri(id),
 
-async function deactivateCompany(id) {
+    FOREIGN KEY(urun_id)
+        REFERENCES urunler(id)
+);
 
-  if (
-    !confirm(
-      "Bu firmayı pasif yapmak istediğinize emin misiniz?"
-    )
-  ) {
-    return;
-  }
+-- =========================================================
+-- 6. MAL KABUL
+-- =========================================================
 
+CREATE TABLE IF NOT EXISTS mal_kabuller (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-  try {
+    firma_id INTEGER NOT NULL,
+    sube_id INTEGER NOT NULL,
+    depo_id INTEGER NOT NULL,
 
-    const r =
-      await fetch(
-        "/api/companies/" + id,
-        {
-          method: "DELETE"
-        }
-      );
+    cari_id INTEGER,
 
-    const data =
-      await r.json();
+    kabul_no TEXT NOT NULL UNIQUE,
 
-    if (!r.ok) {
+    fatura_no TEXT,
 
-      alert(
-        data.error ||
-        "İşlem başarısız."
-      );
+    toplam_tutar REAL NOT NULL DEFAULT 0,
 
-      return;
-    }
+    kabul_tarihi TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    await loadCompanies();
+    kullanici_id INTEGER,
 
-    await loadDashboard();
+    FOREIGN KEY(firma_id)
+        REFERENCES firmalar(id),
 
-  } catch (e) {
+    FOREIGN KEY(sube_id)
+        REFERENCES subeler(id),
 
-    alert(
-      "Sunucu bağlantı hatası."
-    );
+    FOREIGN KEY(depo_id)
+        REFERENCES depolar(id),
 
-  }
+    FOREIGN KEY(cari_id)
+        REFERENCES cariler(id),
 
-}
+    FOREIGN KEY(kullanici_id)
+        REFERENCES kullanicilar(id)
+);
 
+CREATE TABLE IF NOT EXISTS mal_kabul_detaylari (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-// =====================================================
-// SEARCH
-// =====================================================
+    kabul_id INTEGER NOT NULL,
+    urun_id INTEGER NOT NULL,
 
-function filterCompanies() {
+    parti_no TEXT,
+    son_kullanma_tarihi TEXT,
 
-  const q =
-    document
-      .getElementById("companySearch")
-      .value
-      .toLowerCase()
-      .trim();
+    miktar REAL NOT NULL,
+    birim_fiyat REAL NOT NULL DEFAULT 0,
 
-  const filtered =
-    companies.filter(c =>
-      String(c.name || "")
-        .toLowerCase()
-        .includes(q)
-      ||
-      String(c.tax_no || "")
-        .toLowerCase()
-        .includes(q)
-      ||
-      String(c.phone || "")
-        .toLowerCase()
-        .includes(q)
-    );
+    toplam REAL NOT NULL DEFAULT 0,
 
-  renderCompanies(filtered);
-}
+    FOREIGN KEY(kabul_id)
+        REFERENCES mal_kabuller(id),
 
+    FOREIGN KEY(urun_id)
+        REFERENCES urunler(id)
+);
 
-// =====================================================
-// FORM
-// =====================================================
+-- =========================================================
+-- 7. POS / SATIŞ
+-- =========================================================
 
-function clearCompanyForm() {
+CREATE TABLE IF NOT EXISTS satislar (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-  document.getElementById("companyName").value = "";
-  document.getElementById("companyTax").value = "";
-  document.getElementById("companyPhone").value = "";
-  document.getElementById("companyEmail").value = "";
-  document.getElementById("companyAddress").value = "";
+    firma_id INTEGER NOT NULL,
+    sube_id INTEGER NOT NULL,
 
-}
+    fis_no TEXT NOT NULL UNIQUE,
 
+    kullanici_id INTEGER,
 
-function showMessage(text) {
+    ara_toplam REAL NOT NULL DEFAULT 0,
+    indirim REAL NOT NULL DEFAULT 0,
+    kdv REAL NOT NULL DEFAULT 0,
+    genel_toplam REAL NOT NULL DEFAULT 0,
 
-  const box =
-    document.getElementById("companyMessage");
+    odeme_tipi TEXT,
 
-  box.textContent = text;
+    durum TEXT NOT NULL DEFAULT 'TAMAMLANDI',
 
-  box.classList.remove("hidden");
+    satis_tarihi TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-  setTimeout(() => {
-    box.classList.add("hidden");
-  }, 3500);
+    FOREIGN KEY(firma_id)
+        REFERENCES firmalar(id),
 
-}
+    FOREIGN KEY(sube_id)
+        REFERENCES subeler(id),
 
+    FOREIGN KEY(kullanici_id)
+        REFERENCES kullanicilar(id)
+);
 
-// =====================================================
-// ESCAPE
-// =====================================================
+CREATE TABLE IF NOT EXISTS satis_detaylari (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-function esc(v) {
+    satis_id INTEGER NOT NULL,
+    urun_id INTEGER NOT NULL,
 
-  return String(v ?? "")
-    .replace(/[&<>"']/g, m => ({
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;"
-    }[m]));
+    miktar REAL NOT NULL,
 
-}
+    birim_fiyat REAL NOT NULL DEFAULT 0,
+    indirim REAL NOT NULL DEFAULT 0,
+    kdv_orani REAL NOT NULL DEFAULT 0,
 
+    toplam REAL NOT NULL DEFAULT 0,
 
-// =====================================================
-// START
-// =====================================================
+    FOREIGN KEY(satis_id)
+        REFERENCES satislar(id),
 
-loadDashboard();
+    FOREIGN KEY(urun_id)
+        REFERENCES urunler(id)
+);
 
-</script>
+-- =========================================================
+-- 8. KASA
+-- =========================================================
 
-</body>
-</html>`;
+CREATE TABLE IF NOT EXISTS kasalar (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    sube_id INTEGER NOT NULL,
+
+    kasa_kodu TEXT NOT NULL,
+    kasa_adi TEXT NOT NULL,
+
+    aktif INTEGER NOT NULL DEFAULT 1,
+
+    UNIQUE(sube_id, kasa_kodu),
+
+    FOREIGN KEY(sube_id)
+        REFERENCES subeler(id)
+);
+
+CREATE TABLE IF NOT EXISTS kasa_gunleri (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    kasa_id INTEGER NOT NULL,
+
+    tarih TEXT NOT NULL,
+
+    acilis_nakdi REAL NOT NULL DEFAULT 0,
+    beklenen_nakit REAL NOT NULL DEFAULT 0,
+    sayilan_nakit REAL NOT NULL DEFAULT 0,
+
+    kasa_fazlasi REAL NOT NULL DEFAULT 0,
+    kasa_eksigi REAL NOT NULL DEFAULT 0,
+
+    kapanis_tarihi TEXT,
+
+    kullanici_id INTEGER,
+
+    FOREIGN KEY(kasa_id)
+        REFERENCES kasalar(id),
+
+    FOREIGN KEY(kullanici_id)
+        REFERENCES kullanicilar(id)
+);
+
+CREATE TABLE IF NOT EXISTS kasa_hareketleri (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    kasa_id INTEGER NOT NULL,
+
+    hareket_tipi TEXT NOT NULL,
+
+    tutar REAL NOT NULL,
+
+    aciklama TEXT,
+
+    referans_tipi TEXT,
+    referans_id INTEGER,
+
+    kullanici_id INTEGER,
+
+    olusturma_tarihi TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY(kasa_id)
+        REFERENCES kasalar(id),
+
+    FOREIGN KEY(kullanici_id)
+        REFERENCES kullanicilar(id)
+);
+
+-- =========================================================
+-- 9. ÖDEME YÖNTEMLERİ
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS odeme_yontemleri (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    ad TEXT NOT NULL UNIQUE,
+
+    aktif INTEGER NOT NULL DEFAULT 1
+);
+
+-- =========================================================
+-- 10. BANKA / HESAP
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS banka_hesaplari (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    firma_id INTEGER NOT NULL,
+
+    banka_adi TEXT NOT NULL,
+    hesap_adi TEXT,
+
+    iban TEXT,
+    hesap_no TEXT,
+
+    bakiye REAL NOT NULL DEFAULT 0,
+
+    aktif INTEGER NOT NULL DEFAULT 1,
+
+    FOREIGN KEY(firma_id)
+        REFERENCES firmalar(id)
+);
+
+CREATE TABLE IF NOT EXISTS banka_hareketleri (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    banka_hesabi_id INTEGER NOT NULL,
+
+    hareket_tipi TEXT NOT NULL,
+
+    tutar REAL NOT NULL,
+
+    aciklama TEXT,
+
+    referans_tipi TEXT,
+    referans_id INTEGER,
+
+    kullanici_id INTEGER,
+
+    olusturma_tarihi TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY(banka_hesabi_id)
+        REFERENCES banka_hesaplari(id),
+
+    FOREIGN KEY(kullanici_id)
+        REFERENCES kullanicilar(id)
+);
+
+-- =========================================================
+-- 11. E-FATURA / E-ARŞİV
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS faturalar (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    firma_id INTEGER NOT NULL,
+
+    sube_id INTEGER,
+
+    cari_id INTEGER,
+
+    satis_id INTEGER,
+
+    fatura_tipi TEXT NOT NULL,
+
+    belge_no TEXT,
+
+    ettn TEXT,
+
+    toplam_tutar REAL NOT NULL DEFAULT 0,
+
+    durum TEXT NOT NULL DEFAULT 'BEKLIYOR',
+
+    entegrator TEXT,
+
+    hata_mesaji TEXT,
+
+    olusturma_tarihi TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY(firma_id)
+        REFERENCES firmalar(id),
+
+    FOREIGN KEY(sube_id)
+        REFERENCES subeler(id),
+
+    FOREIGN KEY(cari_id)
+        REFERENCES cariler(id),
+
+    FOREIGN KEY(satis_id)
+        REFERENCES satislar(id)
+);
+
+-- =========================================================
+-- 12. BARKODLU TERAZİ
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS terazi_ayarlari (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    firma_id INTEGER NOT NULL,
+
+    prefix TEXT NOT NULL DEFAULT '27',
+
+    urun_kodu_baslangic INTEGER NOT NULL DEFAULT 2,
+    urun_kodu_uzunluk INTEGER NOT NULL DEFAULT 5,
+
+    agirlik_baslangic INTEGER,
+    agirlik_uzunluk INTEGER,
+
+    fiyat_baslangic INTEGER,
+    fiyat_uzunluk INTEGER,
+
+    aktif INTEGER NOT NULL DEFAULT 1,
+
+    FOREIGN KEY(firma_id)
+        REFERENCES firmalar(id)
+);
+
+-- =========================================================
+-- 13. DENETİM / AUDIT
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS denetim_kayitlari (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    kullanici_id INTEGER,
+
+    islem_tipi TEXT NOT NULL,
+
+    tablo_adi TEXT NOT NULL,
+
+    kayit_id INTEGER,
+
+    eski_veri TEXT,
+    yeni_veri TEXT,
+
+    ip_adresi TEXT,
+    cihaz_id TEXT,
+
+    tarih_saat TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY(kullanici_id)
+        REFERENCES kullanicilar(id)
+);
+
+-- =========================================================
+-- 14. SİSTEM AYARLARI
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS sistem_ayarlari (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    firma_id INTEGER NOT NULL,
+
+    anahtar TEXT NOT NULL,
+    deger TEXT,
+
+    UNIQUE(firma_id, anahtar),
+
+    FOREIGN KEY(firma_id)
+        REFERENCES firmalar(id)
+);
+
+-- =========================================================
+-- BAŞLANGIÇ ROLLERİ
+-- =========================================================
+
+INSERT OR IGNORE INTO roller
+(ad, aciklama)
+VALUES
+('SUPER_ADMIN','Tam sistem yetkisi'),
+('MAGAZA_MUDURU','Mağaza yönetimi'),
+('FINANS','Finans ve kasa işlemleri'),
+('DEPO','Depo ve stok işlemleri'),
+('KASIYER','POS ve satış işlemleri');
+
+-- =========================================================
+-- BAŞLANGIÇ BİRİMLERİ
+-- =========================================================
+
+INSERT OR IGNORE INTO birimler
+(ad, sembol)
+VALUES
+('Adet','AD'),
+('Kilogram','KG'),
+('Gram','GR'),
+('Litre','LT'),
+('Metre','MT');
+
+-- =========================================================
+-- BAŞLANGIÇ ÖDEME YÖNTEMLERİ
+-- =========================================================
+
+INSERT OR IGNORE INTO odeme_yontemleri
+(ad)
+VALUES
+('Nakit'),
+('Kredi Kartı'),
+('Banka Kartı'),
+('Yemek Kartı'),
+('Havale / EFT');
