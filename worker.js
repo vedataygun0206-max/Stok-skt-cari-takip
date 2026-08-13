@@ -188,6 +188,65 @@ export default {
 
       if (request.method === "GET" && path === "/api/urunler") {
 
+        // ================================
+// ÜRÜN EKLE
+// ================================
+
+if (request.method === "POST" && path === "/api/urunler") {
+
+  const body = await request.json();
+
+  if (
+    !body.firma_id ||
+    !body.birim_id ||
+    !body.kod ||
+    !body.ad
+  ) {
+    return json({
+      ok: false,
+      error: "Firma, birim, ürün kodu ve ürün adı zorunludur."
+    }, 400);
+  }
+
+  const result = await env.DB
+    .prepare(`
+      INSERT INTO urunler (
+        firma_id,
+        kategori_id,
+        birim_id,
+        kod,
+        ad,
+        marka,
+        alis_fiyati,
+        satis_fiyati,
+        minimum_stok,
+        kdv_orani,
+        tartili_urun,
+        aktif
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+    `)
+    .bind(
+      body.firma_id,
+      body.kategori_id ?? null,
+      body.birim_id,
+      body.kod,
+      body.ad,
+      body.marka ?? null,
+      body.alis_fiyati ?? 0,
+      body.satis_fiyati ?? 0,
+      body.minimum_stok ?? 0,
+      body.kdv_orani ?? 0,
+      body.tartili_urun ? 1 : 0
+    )
+    .run();
+
+  return json({
+    ok: true,
+    mesaj: "Ürün başarıyla oluşturuldu.",
+    id: result.meta.last_row_id
+  }, 201);
+}
         const { results } = await env.DB
           .prepare(`
             SELECT
