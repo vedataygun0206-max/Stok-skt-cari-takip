@@ -117,11 +117,7 @@ export default {
       // ANA SAYFA
       // ================================
 
-      return new Response(HTML, {
-        headers: {
-          "content-type": "text/html; charset=utf-8"
-        }
-      });
+      return env.ASSETS.fetch(request);
 
     } catch (error) {
 
