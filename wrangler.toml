@@ -6,3 +6,6 @@ compatibility_date = "2026-08-13"
 binding = "DB"
 database_name = "stok-skt-cari-takip"
 database_id = "7e804db3-7b00-461b-9094-5fd7348c4029"
+[assets]
+directory = "."
+binding = "ASSETS"
