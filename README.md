@@ -1,0 +1,1 @@
+# Stok-skt-cari-takip
