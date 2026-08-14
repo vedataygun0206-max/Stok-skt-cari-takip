@@ -1,1 +1,714 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 
+<title>Stok Yönetimi — SKT Stok & Cari Takip</title>
+
+<style>
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#f4f6f8;
+  color:#17202a;
+}
+
+header{
+  background:#17202a;
+  color:white;
+  padding:18px 20px;
+}
+
+.logo{
+  font-size:21px;
+  font-weight:bold;
+}
+
+.sub{
+  margin-top:5px;
+  opacity:.75;
+  font-size:13px;
+}
+
+nav{
+  background:white;
+  padding:10px;
+  display:flex;
+  gap:8px;
+  overflow-x:auto;
+  border-bottom:1px solid #ddd;
+}
+
+nav a{
+  text-decoration:none;
+  color:#17202a;
+  background:#eef1f4;
+  padding:10px 14px;
+  border-radius:8px;
+  font-weight:bold;
+  white-space:nowrap;
+}
+
+nav a:hover{
+  background:#17202a;
+  color:white;
+}
+
+main{
+  max-width:1250px;
+  margin:auto;
+  padding:20px;
+}
+
+.top{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:15px;
+  margin-bottom:18px;
+}
+
+h1{
+  margin:0;
+  font-size:25px;
+}
+
+.cards{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+  gap:14px;
+  margin-bottom:20px;
+}
+
+.card{
+  background:white;
+  padding:20px;
+  border-radius:14px;
+  box-shadow:0 2px 10px #00000010;
+}
+
+.card .icon{
+  font-size:28px;
+}
+
+.card .label{
+  margin-top:8px;
+  color:#68727d;
+}
+
+.card .number{
+  font-size:27px;
+  font-weight:bold;
+  margin-top:5px;
+}
+
+.panel{
+  background:white;
+  border-radius:14px;
+  padding:18px;
+  box-shadow:0 2px 10px #00000010;
+  margin-bottom:18px;
+}
+
+.panel h2{
+  margin-top:0;
+}
+
+.form-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:13px;
+}
+
+label{
+  display:block;
+  font-size:13px;
+  font-weight:bold;
+  margin-bottom:6px;
+}
+
+input,select{
+  width:100%;
+  padding:11px;
+  border:1px solid #ccd2d8;
+  border-radius:8px;
+  font-size:14px;
+}
+
+.actions{
+  margin-top:16px;
+  display:flex;
+  gap:10px;
+}
+
+.btn{
+  border:0;
+  border-radius:8px;
+  padding:11px 16px;
+  cursor:pointer;
+  font-weight:bold;
+}
+
+.btn-primary{
+  background:#17202a;
+  color:white;
+}
+
+.btn-danger{
+  background:#d32f2f;
+  color:white;
+}
+
+.search{
+  margin-bottom:15px;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+
+th,td{
+  padding:11px;
+  border-bottom:1px solid #eee;
+  text-align:left;
+  font-size:14px;
+}
+
+th{
+  background:#f0f2f4;
+}
+
+.badge{
+  padding:5px 8px;
+  border-radius:6px;
+  font-weight:bold;
+}
+
+.ok{
+  background:#e8f5e9;
+  color:#176b32;
+}
+
+.warning{
+  background:#fff3cd;
+  color:#856404;
+}
+
+.danger{
+  background:#fde2e2;
+  color:#a30000;
+}
+
+@media(max-width:650px){
+  main{padding:12px}
+
+  .top{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+
+  .panel{
+    overflow-x:auto;
+  }
+
+  table{
+    min-width:900px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div class="logo">📦 SKT Stok & Cari Takip</div>
+  <div class="sub">Market Yönetim ve Stok Kontrol Sistemi</div>
+</header>
+
+<nav>
+  <a href="/index.html">🏠 Ana Sayfa</a>
+  <a href="/products.html">📦 Ürünler</a>
+  <a href="/stock.html">📊 Stok</a>
+  <a href="/skt.html">⏰ SKT</a>
+  <a href="/cari.html">🧾 Cari</a>
+  <a href="/kasa.html">💰 Kasa</a>
+  <a href="/pos.html">🛒 POS</a>
+  <a href="/reports.html">📈 Raporlar</a>
+</nav>
+
+<main>
+
+<div class="top">
+  <div>
+    <h1>📊 Stok Yönetimi</h1>
+    <div>Depo bazlı stok, minimum-maksimum kontrolü ve stok hareketleri</div>
+  </div>
+</div>
+
+<div class="cards">
+
+  <div class="card">
+    <div class="icon">📦</div>
+    <div class="label">Toplam Ürün</div>
+    <div class="number" id="urunSayisi">0</div>
+  </div>
+
+  <div class="card">
+    <div class="icon">📊</div>
+    <div class="label">Stok Kalemi</div>
+    <div class="number" id="stokKalemi">0</div>
+  </div>
+
+  <div class="card">
+    <div class="icon">🔻</div>
+    <div class="label">Kritik Stok</div>
+    <div class="number" id="kritikStok">0</div>
+  </div>
+
+  <div class="card">
+    <div class="icon">🔺</div>
+    <div class="label">Fazla Stok</div>
+    <div class="number" id="fazlaStok">0</div>
+  </div>
+
+</div>
+
+<div class="panel">
+
+<h2>🔎 Stok Arama</h2>
+
+<div class="form-grid">
+
+  <div>
+    <label>Depo</label>
+    <select id="depo">
+      <option value="">Tüm Depolar</option>
+    </select>
+  </div>
+
+  <div>
+    <label>Ürün Ara</label>
+    <input
+      type="search"
+      id="search"
+      placeholder="Ürün kodu veya adı..."
+      oninput="filterStock()"
+    >
+  </div>
+
+</div>
+
+</div>
+
+<div class="panel">
+
+<h2>📦 Mevcut Stoklar</h2>
+
+<table>
+
+<thead>
+<tr>
+  <th>Kod</th>
+  <th>Ürün</th>
+  <th>Depo</th>
+  <th>Mevcut</th>
+  <th>Minimum</th>
+  <th>Maksimum</th>
+  <th>Durum</th>
+</tr>
+</thead>
+
+<tbody id="stockRows">
+
+<tr>
+  <td colspan="7">
+    Stoklar yükleniyor...
+  </td>
+</tr>
+
+</tbody>
+
+</table>
+
+</div>
+
+<div class="panel">
+
+<h2>🔄 Stok İşlemleri</h2>
+
+<div class="form-grid">
+
+  <div>
+    <label>İşlem Türü</label>
+
+    <select id="hareketTipi">
+      <option value="giris">➕ Stok Girişi</option>
+      <option value="cikis">➖ Stok Çıkışı</option>
+    </select>
+  </div>
+
+  <div>
+    <label>Ürün</label>
+
+    <select id="hareketUrun">
+      <option value="">Ürün seçin</option>
+    </select>
+  </div>
+
+  <div>
+    <label>Depo</label>
+
+    <select id="hareketDepo">
+      <option value="">Depo seçin</option>
+    </select>
+  </div>
+
+  <div>
+    <label>Miktar</label>
+
+    <input
+      type="number"
+      id="miktar"
+      step="0.001"
+      min="0"
+      placeholder="0"
+    >
+  </div>
+
+</div>
+
+<div class="actions">
+
+<button
+  class="btn btn-primary"
+  onclick="stokIslemi()"
+>
+💾 İşlemi Kaydet
+</button>
+
+</div>
+
+</div>
+
+</main>
+
+<script>
+
+let stockData = [];
+let products = [];
+let warehouses = [];
+
+
+async function loadProducts(){
+
+  try{
+
+    const response =
+      await fetch("/api/urunler");
+
+    if(!response.ok){
+      throw new Error("Ürün API hatası");
+    }
+
+    products =
+      await response.json();
+
+    document.getElementById("urunSayisi")
+      .textContent = products.length;
+
+    const select =
+      document.getElementById("hareketUrun");
+
+    select.innerHTML =
+      '<option value="">Ürün seçin</option>' +
+
+      products.map(p => `
+        <option value="${p.id}">
+          ${esc(p.kod)} - ${esc(p.ad)}
+        </option>
+      `).join("");
+
+  }catch(error){
+
+    console.error(error);
+
+  }
+
+}
+
+
+async function loadWarehouses(){
+
+  try{
+
+    const response =
+      await fetch("/api/depolar");
+
+    if(!response.ok){
+      throw new Error("Depo API hatası");
+    }
+
+    warehouses =
+      await response.json();
+
+    const depo =
+      document.getElementById("depo");
+
+    const hareketDepo =
+      document.getElementById("hareketDepo");
+
+    depo.innerHTML =
+      '<option value="">Tüm Depolar</option>' +
+
+      warehouses.map(d => `
+        <option value="${d.id}">
+          ${esc(d.ad)}
+        </option>
+      `).join("");
+
+    hareketDepo.innerHTML =
+      '<option value="">Depo seçin</option>' +
+
+      warehouses.map(d => `
+        <option value="${d.id}">
+          ${esc(d.ad)}
+        </option>
+      `).join("");
+
+  }catch(error){
+
+    console.error(error);
+
+  }
+
+}
+
+
+async function loadStock(){
+
+  try{
+
+    const response =
+      await fetch("/api/mevcut-stoklar");
+
+    if(!response.ok){
+      throw new Error("Stok API hatası");
+    }
+
+    stockData =
+      await response.json();
+
+    renderStock(stockData);
+
+  }catch(error){
+
+    console.error(error);
+
+    document.getElementById("stockRows").innerHTML =
+      '<tr><td colspan="7">Stok verileri yüklenemedi.</td></tr>';
+
+  }
+
+}
+
+
+function renderStock(list){
+
+  const rows =
+    document.getElementById("stockRows");
+
+  document.getElementById("stokKalemi")
+    .textContent = list.length;
+
+  let kritik = 0;
+  let fazla = 0;
+
+  list.forEach(s => {
+
+    const mevcut =
+      Number(s.mevcut_miktar || 0);
+
+    const minimum =
+      Number(s.minimum_stok || 0);
+
+    const maksimum =
+      Number(s.maksimum_stok || 0);
+
+    if(mevcut < minimum){
+      kritik++;
+    }
+
+    if(maksimum > 0 && mevcut > maksimum){
+      fazla++;
+    }
+
+  });
+
+  document.getElementById("kritikStok")
+    .textContent = kritik;
+
+  document.getElementById("fazlaStok")
+    .textContent = fazla;
+
+
+  if(!list.length){
+
+    rows.innerHTML =
+      '<tr><td colspan="7">Henüz stok kaydı bulunmuyor.</td></tr>';
+
+    return;
+  }
+
+
+  rows.innerHTML =
+    list.map(s => {
+
+      const mevcut =
+        Number(s.mevcut_miktar || 0);
+
+      const minimum =
+        Number(s.minimum_stok || 0);
+
+      const maksimum =
+        Number(s.maksimum_stok || 0);
+
+      let durum = "Normal";
+      let cls = "ok";
+
+      if(mevcut < minimum){
+
+        durum = "Kritik";
+        cls = "danger";
+
+      }else if(
+        maksimum > 0 &&
+        mevcut > maksimum
+      ){
+
+        durum = "Fazla Stok";
+        cls = "warning";
+
+      }
+
+      return `
+
+        <tr>
+
+          <td>${esc(s.kod || "-")}</td>
+
+          <td>${esc(s.urun_adi || "-")}</td>
+
+          <td>${esc(s.depo_adi || "-")}</td>
+
+          <td>${number(s.mevcut_miktar)}</td>
+
+          <td>${number(s.minimum_stok)}</td>
+
+          <td>${number(s.maksimum_stok)}</td>
+
+          <td>
+            <span class="badge ${cls}">
+              ${durum}
+            </span>
+          </td>
+
+        </tr>
+
+      `;
+
+    }).join("");
+
+}
+
+
+function filterStock(){
+
+  const q =
+    document
+      .getElementById("search")
+      .value
+      .toLowerCase()
+      .trim();
+
+  const depo =
+    document.getElementById("depo").value;
+
+  const filtered =
+    stockData.filter(s => {
+
+      const text =
+        (
+          String(s.kod || "") +
+          " " +
+          String(s.urun_adi || "")
+        ).toLowerCase();
+
+      const matchText =
+        text.includes(q);
+
+      const matchDepo =
+        !depo ||
+        String(s.depo_id) === String(depo);
+
+      return matchText && matchDepo;
+
+    });
+
+  renderStock(filtered);
+
+}
+
+
+document
+  .getElementById("depo")
+  .addEventListener("change", filterStock);
+
+
+function stokIslemi(){
+
+  alert(
+    "Stok hareketi ekranı hazır.\n\n" +
+    "Bir sonraki aşamada bu işlem " +
+    "stok_hareketleri ve mevcut_stoklar tablolarına bağlanacak."
+  );
+
+}
+
+
+function number(value){
+
+  return Number(value || 0)
+    .toLocaleString("tr-TR",{
+      minimumFractionDigits:3,
+      maximumFractionDigits:3
+    });
+
+}
+
+
+function esc(value){
+
+  return String(value ?? "")
+    .replace(/[&<>"']/g,m => ({
+      "&":"&amp;",
+      "<":"&lt;",
+      ">":"&gt;",
+      '"':"&quot;",
+      "'":"&#39;"
+    }[m]));
+
+}
+
+
+loadProducts();
+loadWarehouses();
+loadStock();
+
+</script>
+
+</body>
+</html>
