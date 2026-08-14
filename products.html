@@ -76,6 +76,10 @@ h1{
   font-size:25px;
 }
 
+h2{
+  margin-top:0;
+}
+
 .btn{
   border:0;
   border-radius:8px;
@@ -89,11 +93,6 @@ h1{
   color:white;
 }
 
-.btn-danger{
-  background:#d32f2f;
-  color:white;
-}
-
 .panel{
   background:white;
   border-radius:14px;
@@ -104,8 +103,8 @@ h1{
 
 .form-grid{
   display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
-  gap:13px;
+  grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+  gap:14px;
 }
 
 label{
@@ -121,6 +120,26 @@ input,select{
   border:1px solid #ccd2d8;
   border-radius:8px;
   font-size:14px;
+  background:white;
+}
+
+input:focus,
+select:focus{
+  outline:none;
+  border-color:#17202a;
+}
+
+.field-full{
+  grid-column:1/-1;
+}
+
+.section-title{
+  grid-column:1/-1;
+  font-size:16px;
+  font-weight:bold;
+  padding-top:8px;
+  border-bottom:1px solid #eee;
+  padding-bottom:8px;
 }
 
 .checkbox{
@@ -134,13 +153,18 @@ input,select{
   width:auto;
 }
 
+.checkbox label{
+  margin:0;
+}
+
 .actions{
-  margin-top:16px;
+  margin-top:18px;
   display:flex;
   gap:10px;
 }
 
 .search{
+  width:100%;
   margin-bottom:15px;
 }
 
@@ -168,20 +192,34 @@ th{
   font-weight:bold;
 }
 
+.info{
+  background:#eef5ff;
+  border-left:4px solid #3578e5;
+  padding:12px;
+  border-radius:7px;
+  margin-bottom:18px;
+  font-size:13px;
+}
+
 @media(max-width:650px){
-  main{padding:12px}
+
+  main{
+    padding:12px;
+  }
+
   .top{
     align-items:flex-start;
     flex-direction:column;
   }
 
   table{
-    min-width:850px;
+    min-width:1000px;
   }
 
   .panel{
     overflow-x:auto;
   }
+
 }
 </style>
 </head>
@@ -189,210 +227,367 @@ th{
 <body>
 
 <header>
-  <div class="logo">📦 SKT Stok & Cari Takip</div>
-  <div class="sub">Market Yönetim ve Stok Kontrol Sistemi</div>
+
+<div class="logo">
+📦 SKT Stok & Cari Takip
+</div>
+
+<div class="sub">
+Market Yönetim ve Stok Kontrol Sistemi
+</div>
+
 </header>
 
 <nav>
-  <a href="/index.html">🏠 Ana Sayfa</a>
-  <a href="/products.html">📦 Ürünler</a>
-  <a href="/stock.html">📊 Stok</a>
-  <a href="/skt.html">⏰ SKT</a>
-  <a href="/cari.html">🧾 Cari</a>
-  <a href="/kasa.html">💰 Kasa</a>
-  <a href="/pos.html">🛒 POS</a>
-  <a href="/reports.html">📈 Raporlar</a>
+
+<a href="/index.html">🏠 Ana Sayfa</a>
+<a href="/firmalar.html">🏢 Firmalar</a>
+<a href="/products.html">📦 Ürünler</a>
+<a href="/stock.html">📊 Stok</a>
+<a href="/skt.html">⏰ SKT</a>
+<a href="/cari.html">🧾 Cari</a>
+<a href="/kasa.html">💰 Kasa</a>
+<a href="/pos.html">🛒 POS</a>
+<a href="/reports.html">📈 Raporlar</a>
+
 </nav>
 
 <main>
 
 <div class="top">
-  <div>
-    <h1>📦 Ürün Yönetimi</h1>
-    <div>Ürün kartları, fiyatlar ve temel ürün bilgileri</div>
-  </div>
 
-  <button class="btn btn-primary" onclick="showForm()">
-    ➕ Yeni Ürün
-  </button>
+<div>
+
+<h1>📦 Ürün Yönetimi</h1>
+
+<div>
+Ürün kartları, fiyatlar, stok limitleri ve barkod bilgileri
 </div>
+
+</div>
+
+<button
+class="btn btn-primary"
+onclick="showForm()">
+
+➕ Yeni Ürün
+
+</button>
+
+</div>
+
 
 <div class="panel" id="formPanel" style="display:none">
 
-  <h2>Yeni Ürün</h2>
+<h2>➕ Yeni Ürün</h2>
 
-  <form id="productForm">
+<div class="info">
 
-    <div class="form-grid">
+Firma, kategori ve birim bilgileri veritabanından otomatik
+olarak getirilecektir.
 
-      <div>
-        <label>Firma ID</label>
-        <input
-          type="number"
-          id="firma_id"
-          required
-          placeholder="Firma ID"
-        >
-      </div>
+</div>
 
-      <div>
-        <label>Kategori ID</label>
-        <input
-          type="number"
-          id="kategori_id"
-          placeholder="Kategori ID"
-        >
-      </div>
+<form id="productForm">
 
-      <div>
-        <label>Birim ID</label>
-        <input
-          type="number"
-          id="birim_id"
-          required
-          placeholder="Örn. 1"
-        >
-      </div>
+<div class="form-grid">
 
-      <div>
-        <label>Ürün Kodu</label>
-        <input
-          type="text"
-          id="kod"
-          required
-          placeholder="Örn. 100001"
-        >
-      </div>
 
-      <div>
-        <label>Ürün Adı</label>
-        <input
-          type="text"
-          id="ad"
-          required
-          placeholder="Ürün adı"
-        >
-      </div>
+<div>
 
-      <div>
-        <label>Marka</label>
-        <input
-          type="text"
-          id="marka"
-          placeholder="Marka"
-        >
-      </div>
+<label>Firma</label>
 
-      <div>
-        <label>Alış Fiyatı</label>
-        <input
-          type="number"
-          step="0.01"
-          id="alis_fiyati"
-          value="0"
-        >
-      </div>
+<select id="firma_id" required>
 
-      <div>
-        <label>Satış Fiyatı</label>
-        <input
-          type="number"
-          step="0.01"
-          id="satis_fiyati"
-          value="0"
-        >
-      </div>
+<option value="">
+Firma seçin
+</option>
 
-      <div>
-        <label>Minimum Stok</label>
-        <input
-          type="number"
-          step="0.001"
-          id="minimum_stok"
-          value="0"
-        >
-      </div>
+</select>
 
-      <div>
-        <label>KDV Oranı (%)</label>
-        <input
-          type="number"
-          step="0.01"
-          id="kdv_orani"
-          value="0"
-        >
-      </div>
+</div>
 
-      <div class="checkbox">
-        <input
-          type="checkbox"
-          id="tartili_urun"
-        >
-        <label for="tartili_urun">
-          ⚖️ Tartılı Ürün
-        </label>
-      </div>
 
-    </div>
+<div>
 
-    <div class="actions">
+<label>Kategori</label>
 
-      <button
-        type="submit"
-        class="btn btn-primary"
-      >
-        💾 Ürünü Kaydet
-      </button>
+<select id="kategori_id">
 
-      <button
-        type="button"
-        class="btn"
-        onclick="hideForm()"
-      >
-        İptal
-      </button>
+<option value="">
+Kategori seçin
+</option>
 
-    </div>
+</select>
 
-  </form>
+</div>
+
+
+<div>
+
+<label>Birim</label>
+
+<select id="birim_id" required>
+
+<option value="">
+Birim seçin
+</option>
+
+</select>
+
+</div>
+
+
+<div>
+
+<label>Ürün Kodu</label>
+
+<input
+type="text"
+id="kod"
+required
+placeholder="Örn. 100001"
+>
+
+</div>
+
+
+<div>
+
+<label>Ürün Adı</label>
+
+<input
+type="text"
+id="ad"
+required
+placeholder="Ürün adı"
+>
+
+</div>
+
+
+<div>
+
+<label>Marka</label>
+
+<input
+type="text"
+id="marka"
+placeholder="Marka"
+>
+
+</div>
+
+
+<div>
+
+<label>Alış Fiyatı</label>
+
+<input
+type="number"
+step="0.01"
+min="0"
+id="alis_fiyati"
+value="0"
+>
+
+</div>
+
+
+<div>
+
+<label>Satış Fiyatı</label>
+
+<input
+type="number"
+step="0.01"
+min="0"
+id="satis_fiyati"
+value="0"
+>
+
+</div>
+
+
+<div>
+
+<label>KDV Oranı (%)</label>
+
+<input
+type="number"
+step="0.01"
+min="0"
+id="kdv_orani"
+value="0"
+>
+
+</div>
+
+
+<div class="section-title">
+
+📊 Stok Ayarları
+
+</div>
+
+
+<div>
+
+<label>Minimum Stok</label>
+
+<input
+type="number"
+step="0.001"
+min="0"
+id="minimum_stok"
+value="0"
+>
+
+</div>
+
+
+<div>
+
+<label>Maksimum Stok</label>
+
+<input
+type="number"
+step="0.001"
+min="0"
+id="maksimum_stok"
+value="0"
+>
+
+</div>
+
+
+<div class="checkbox">
+
+<input
+type="checkbox"
+id="minimum_stok_uyarisi"
+checked
+>
+
+<label for="minimum_stok_uyarisi">
+
+⚠️ Minimum stok altına düşünce uyar
+
+</label>
+
+</div>
+
+
+<div class="checkbox">
+
+<input
+type="checkbox"
+id="maksimum_stok_uyarisi"
+checked
+>
+
+<label for="maksimum_stok_uyarisi">
+
+⚠️ Maksimum stok üzerine çıkınca uyar
+
+</label>
+
+</div>
+
+
+<div class="checkbox">
+
+<input
+type="checkbox"
+id="tartili_urun"
+>
+
+<label for="tartili_urun">
+
+⚖️ Tartılı Ürün
+
+</label>
+
+</div>
+
+
+</div>
+
+
+<div class="actions">
+
+<button
+type="submit"
+class="btn btn-primary">
+
+💾 Ürünü Kaydet
+
+</button>
+
+
+<button
+type="button"
+class="btn"
+onclick="hideForm()">
+
+İptal
+
+</button>
+
+</div>
+
+</form>
 
 </div>
 
 
 <div class="panel">
 
-  <input
-    class="search"
-    type="search"
-    id="search"
-    placeholder="🔎 Ürün kodu, adı veya marka ara..."
-    oninput="filterProducts()"
-  >
+<input
+class="search"
+type="search"
+id="search"
+placeholder="🔎 Ürün kodu, adı veya marka ara..."
+oninput="filterProducts()"
+>
 
-  <table>
 
-    <thead>
-      <tr>
-        <th>Kod</th>
-        <th>Ürün</th>
-        <th>Marka</th>
-        <th>Birim</th>
-        <th>Alış</th>
-        <th>Satış</th>
-        <th>KDV</th>
-        <th>Durum</th>
-      </tr>
-    </thead>
+<table>
 
-    <tbody id="productRows">
-      <tr>
-        <td colspan="8">
-          Ürünler yükleniyor...
-        </td>
-      </tr>
-    </tbody>
+<thead>
 
-  </table>
+<tr>
+
+<th>Kod</th>
+<th>Ürün</th>
+<th>Marka</th>
+<th>Firma</th>
+<th>Birim</th>
+<th>Alış</th>
+<th>Satış</th>
+<th>Min.</th>
+<th>Maks.</th>
+<th>KDV</th>
+<th>Durum</th>
+
+</tr>
+
+</thead>
+
+
+<tbody id="productRows">
+
+<tr>
+
+<td colspan="11">
+Ürünler yükleniyor...
+</td>
+
+</tr>
+
+</tbody>
+
+</table>
 
 </div>
 
@@ -401,35 +596,185 @@ th{
 
 <script>
 
-let products = [];
+let products=[];
 
+
+/* ================================
+   FORM
+================================ */
 
 function showForm(){
-  document.getElementById("formPanel").style.display = "block";
+
+  document.getElementById("formPanel").style.display="block";
+
+  loadFormData();
+
   window.scrollTo({
     top:0,
     behavior:"smooth"
   });
+
 }
 
 
 function hideForm(){
-  document.getElementById("formPanel").style.display = "none";
+
+  document.getElementById("formPanel").style.display="none";
+
 }
 
+
+/* ================================
+   FİRMA / KATEGORİ / BİRİM
+================================ */
+
+async function loadFormData(){
+
+  await Promise.all([
+    loadFirmalar(),
+    loadKategoriler(),
+    loadBirimler()
+  ]);
+
+}
+
+
+async function loadFirmalar(){
+
+  try{
+
+    const response=await fetch("/api/firmalar");
+
+    if(!response.ok)
+      throw new Error("Firma API");
+
+    const data=await response.json();
+
+    const select=document.getElementById("firma_id");
+
+    select.innerHTML=
+      '<option value="">Firma seçin</option>';
+
+    data.forEach(f=>{
+
+      const option=document.createElement("option");
+
+      option.value=f.id;
+
+      option.textContent=f.ad;
+
+      select.appendChild(option);
+
+    });
+
+  }catch(error){
+
+    console.error(error);
+
+    document.getElementById("firma_id").innerHTML=
+      '<option value="">Firmalar yüklenemedi</option>';
+
+  }
+
+}
+
+
+async function loadKategoriler(){
+
+  try{
+
+    const response=await fetch("/api/kategoriler");
+
+    if(!response.ok)
+      throw new Error("Kategori API");
+
+    const data=await response.json();
+
+    const select=document.getElementById("kategori_id");
+
+    select.innerHTML=
+      '<option value="">Kategori seçin</option>';
+
+    data.forEach(k=>{
+
+      const option=document.createElement("option");
+
+      option.value=k.id;
+
+      option.textContent=k.ad;
+
+      select.appendChild(option);
+
+    });
+
+  }catch(error){
+
+    console.error(error);
+
+    document.getElementById("kategori_id").innerHTML=
+      '<option value="">Kategori yüklenemedi</option>';
+
+  }
+
+}
+
+
+async function loadBirimler(){
+
+  try{
+
+    const response=await fetch("/api/birimler");
+
+    if(!response.ok)
+      throw new Error("Birim API");
+
+    const data=await response.json();
+
+    const select=document.getElementById("birim_id");
+
+    select.innerHTML=
+      '<option value="">Birim seçin</option>';
+
+    data.forEach(b=>{
+
+      const option=document.createElement("option");
+
+      option.value=b.id;
+
+      option.textContent=
+        b.ad + " (" + b.sembol + ")";
+
+      select.appendChild(option);
+
+    });
+
+  }catch(error){
+
+    console.error(error);
+
+    document.getElementById("birim_id").innerHTML=
+      '<option value="">Birim yüklenemedi</option>';
+
+  }
+
+}
+
+
+/* ================================
+   ÜRÜNLER
+================================ */
 
 async function loadProducts(){
 
   try{
 
-    const response =
+    const response=
       await fetch("/api/urunler");
 
-    if(!response.ok){
+    if(!response.ok)
       throw new Error("Ürün API hatası");
-    }
 
-    products =
+    products=
       await response.json();
 
     renderProducts(products);
@@ -438,8 +783,8 @@ async function loadProducts(){
 
     console.error(error);
 
-    document.getElementById("productRows").innerHTML =
-      '<tr><td colspan="8">Ürünler yüklenemedi.</td></tr>';
+    document.getElementById("productRows").innerHTML=
+      '<tr><td colspan="11">Ürünler yüklenemedi.</td></tr>';
 
   }
 
@@ -448,20 +793,22 @@ async function loadProducts(){
 
 function renderProducts(list){
 
-  const rows =
+  const rows=
     document.getElementById("productRows");
 
   if(!list.length){
 
-    rows.innerHTML =
-      '<tr><td colspan="8">Henüz ürün bulunmuyor.</td></tr>';
+    rows.innerHTML=
+      '<tr><td colspan="11">Henüz ürün bulunmuyor.</td></tr>';
 
     return;
+
   }
 
 
-  rows.innerHTML =
-    list.map(p => `
+  rows.innerHTML=
+
+    list.map(p=>`
 
       <tr>
 
@@ -469,20 +816,28 @@ function renderProducts(list){
 
         <td>${esc(p.ad)}</td>
 
-        <td>${esc(p.marka || "-")}</td>
+        <td>${esc(p.marka||"-")}</td>
 
-        <td>${esc(p.birim_sembol || "-")}</td>
+        <td>${esc(p.firma_ad||"-")}</td>
+
+        <td>${esc(p.birim_sembol||"-")}</td>
 
         <td>${money(p.alis_fiyati)}</td>
 
         <td>${money(p.satis_fiyati)}</td>
 
-        <td>${Number(p.kdv_orani || 0)}%</td>
+        <td>${Number(p.minimum_stok||0)}</td>
+
+        <td>${Number(p.maksimum_stok||0)}</td>
+
+        <td>${Number(p.kdv_orani||0)}%</td>
 
         <td>
+
           <span class="badge">
             Aktif
           </span>
+
         </td>
 
       </tr>
@@ -492,20 +847,39 @@ function renderProducts(list){
 }
 
 
+/* ================================
+   ARAMA
+================================ */
+
 function filterProducts(){
 
-  const q =
+  const q=
     document
       .getElementById("search")
       .value
       .toLowerCase()
       .trim();
 
-  const filtered =
-    products.filter(p =>
-      String(p.kod || "").toLowerCase().includes(q) ||
-      String(p.ad || "").toLowerCase().includes(q) ||
-      String(p.marka || "").toLowerCase().includes(q)
+  const filtered=
+
+    products.filter(p=>
+
+      String(p.kod||"")
+        .toLowerCase()
+        .includes(q)
+
+      ||
+
+      String(p.ad||"")
+        .toLowerCase()
+        .includes(q)
+
+      ||
+
+      String(p.marka||"")
+        .toLowerCase()
+        .includes(q)
+
     );
 
   renderProducts(filtered);
@@ -513,49 +887,35 @@ function filterProducts(){
 }
 
 
-function money(value){
-
-  return Number(value || 0)
-    .toLocaleString("tr-TR",{
-      minimumFractionDigits:2,
-      maximumFractionDigits:2
-    }) + " ₺";
-
-}
-
-
-function esc(value){
-
-  return String(value ?? "")
-    .replace(/[&<>"']/g,m => ({
-      "&":"&amp;",
-      "<":"&lt;",
-      ">":"&gt;",
-      '"':"&quot;",
-      "'":"&#39;"
-    }[m]));
-
-}
-
+/* ================================
+   ÜRÜN KAYDET
+================================ */
 
 document
   .getElementById("productForm")
-  .addEventListener("submit", async function(e){
+  .addEventListener("submit",async function(e){
 
     e.preventDefault();
 
-    const body = {
+
+    const body={
 
       firma_id:
-        Number(document.getElementById("firma_id").value),
+        Number(
+          document.getElementById("firma_id").value
+        ),
 
       kategori_id:
         document.getElementById("kategori_id").value
-          ? Number(document.getElementById("kategori_id").value)
+          ? Number(
+              document.getElementById("kategori_id").value
+            )
           : null,
 
       birim_id:
-        Number(document.getElementById("birim_id").value),
+        Number(
+          document.getElementById("birim_id").value
+        ),
 
       kod:
         document.getElementById("kod").value.trim(),
@@ -567,26 +927,51 @@ document
         document.getElementById("marka").value.trim(),
 
       alis_fiyati:
-        Number(document.getElementById("alis_fiyati").value || 0),
+        Number(
+          document.getElementById("alis_fiyati").value||0
+        ),
 
       satis_fiyati:
-        Number(document.getElementById("satis_fiyati").value || 0),
+        Number(
+          document.getElementById("satis_fiyati").value||0
+        ),
 
       minimum_stok:
-        Number(document.getElementById("minimum_stok").value || 0),
+        Number(
+          document.getElementById("minimum_stok").value||0
+        ),
+
+      maksimum_stok:
+        Number(
+          document.getElementById("maksimum_stok").value||0
+        ),
+
+      minimum_stok_uyarisi:
+        document.getElementById(
+          "minimum_stok_uyarisi"
+        ).checked ? 1 : 0,
+
+      maksimum_stok_uyarisi:
+        document.getElementById(
+          "maksimum_stok_uyarisi"
+        ).checked ? 1 : 0,
 
       kdv_orani:
-        Number(document.getElementById("kdv_orani").value || 0),
+        Number(
+          document.getElementById("kdv_orani").value||0
+        ),
 
       tartili_urun:
-        document.getElementById("tartili_urun").checked
+        document.getElementById(
+          "tartili_urun"
+        ).checked ? 1 : 0
 
     };
 
 
     try{
 
-      const response =
+      const response=
         await fetch("/api/urunler",{
 
           method:"POST",
@@ -600,22 +985,26 @@ document
         });
 
 
-      const result =
+      const result=
         await response.json();
 
 
       if(!response.ok){
 
         alert(
-          "❌ Ürün kaydedilemedi:\n" +
-          (result.error || "Bilinmeyen hata")
+          "❌ Ürün kaydedilemedi:\n"+
+          (result.error||"Bilinmeyen hata")
         );
 
         return;
+
       }
 
 
-      alert("✅ Ürün başarıyla kaydedildi.");
+      alert(
+        "✅ Ürün başarıyla kaydedildi."
+      );
+
 
       document
         .getElementById("productForm")
@@ -628,6 +1017,8 @@ document
 
     }catch(error){
 
+      console.error(error);
+
       alert(
         "❌ Sunucu bağlantısı kurulamadı."
       );
@@ -636,6 +1027,45 @@ document
 
 });
 
+
+/* ================================
+   PARA
+================================ */
+
+function money(value){
+
+  return Number(value||0)
+    .toLocaleString("tr-TR",{
+      minimumFractionDigits:2,
+      maximumFractionDigits:2
+    })+" ₺";
+
+}
+
+
+/* ================================
+   GÜVENLİ METİN
+================================ */
+
+function esc(value){
+
+  return String(value??"")
+    .replace(/[&<>"']/g,m=>({
+
+      "&":"&amp;",
+      "<":"&lt;",
+      ">":"&gt;",
+      '"':"&quot;",
+      "'":"&#39;"
+
+    }[m]));
+
+}
+
+
+/* ================================
+   BAŞLAT
+================================ */
 
 loadProducts();
 
