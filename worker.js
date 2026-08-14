@@ -233,13 +233,42 @@ if (request.method === "POST" && path === "/api/firmalar") {
 
 
       // ================================
-      // ÜRÜNLER
-      // ================================
+// ÜRÜNLER - LİSTELE
+// ================================
 
-      if (request.method === "GET" && path === "/api/urunler") {
+if (request.method === "GET" && path === "/api/urunler") {
 
-        // ================================
-// ÜRÜN EKLE
+  const { results } = await env.DB
+    .prepare(`
+      SELECT
+        u.*,
+        f.ad AS firma_adi,
+        k.ad AS kategori_adi,
+        b.ad AS birim_adi,
+        b.sembol AS birim_sembol
+      FROM urunler u
+
+      JOIN firmalar f
+        ON f.id = u.firma_id
+
+      LEFT JOIN kategoriler k
+        ON k.id = u.kategori_id
+
+      JOIN birimler b
+        ON b.id = u.birim_id
+
+      WHERE u.aktif = 1
+
+      ORDER BY u.id DESC
+    `)
+    .all();
+
+  return json(results);
+}
+
+
+// ================================
+// ÜRÜNLER - EKLE
 // ================================
 
 if (request.method === "POST" && path === "/api/urunler") {
@@ -252,10 +281,12 @@ if (request.method === "POST" && path === "/api/urunler") {
     !body.kod ||
     !body.ad
   ) {
+
     return json({
       ok: false,
       error: "Firma, birim, ürün kodu ve ürün adı zorunludur."
     }, 400);
+
   }
 
   const result = await env.DB
@@ -270,28 +301,36 @@ if (request.method === "POST" && path === "/api/urunler") {
         alis_fiyati,
         satis_fiyati,
         minimum_stok,
+        maksimum_stok,
         kdv_orani,
         terazi_urunu,
         aktif
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
     `)
     .bind(
-      body.firma_id,
-      body.kategori_id ?? null,
-      body.birim_id,
-      body.kod,
-      body.ad,
-      body.marka ?? null,
-      body.alis_fiyati ?? 0,
-      body.satis_fiyati ?? 0,
-      body.minimum_stok ?? 0,
-      body.kdv_orani ?? 0,
+      Number(body.firma_id),
+      body.kategori_id ? Number(body.kategori_id) : null,
+      Number(body.birim_id),
+      body.kod.trim(),
+      body.ad.trim(),
+      body.marka?.trim() || null,
+      Number(body.alis_fiyati || 0),
+      Number(body.satis_fiyati || 0),
+      Number(body.minimum_stok || 0),
+      Number(body.maksimum_stok || 0),
+      Number(body.kdv_orani || 0),
       body.tartili_urun ? 1 : 0
     )
     .run();
 
   return json({
+    ok: true,
+    mesaj: "Ürün başarıyla oluşturuldu.",
+    id: result.meta.last_row_id
+  }, 201);
+}
+
     ok: true,
     mesaj: "Ürün başarıyla oluşturuldu.",
     id: result.meta.last_row_id
