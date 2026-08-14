@@ -367,34 +367,43 @@ if (request.method === "POST" && path === "/api/urunler") {
       }
 
 
-      // ================================
-      // STOK
-      // ================================
+    // ================================
+// STOK
+// ================================
 
-      if (request.method === "GET" && path === "/api/stok") {
+if (request.method === "GET" && path === "/api/stok") {
 
-        const { results } = await env.DB
-          .prepare(`
-            SELECT
-              ms.urun_id,
-              ms.depo_id,
-              ms.miktar,
-              u.kod AS urun_kodu,
-              u.ad AS urun_adi,
-              d.ad AS depo_adi
-            FROM mevcut_stoklar ms
-            JOIN urunler u
-              ON u.id = ms.urun_id
-            JOIN depolar d
-              ON d.id = ms.depo_id
-            ORDER BY u.ad
-          `)
-          .all();
+  const { results } = await env.DB
+    .prepare(`
+      SELECT
+        ms.urun_id,
+        ms.depo_id,
+        ms.miktar AS mevcut_miktar,
 
-        return json(results);
-      }
+        u.kod,
+        u.ad AS urun_adi,
+        u.minimum_stok,
+        u.maksimum_stok,
 
+        d.ad AS depo_adi
 
+      FROM mevcut_stoklar ms
+
+      JOIN urunler u
+        ON u.id = ms.urun_id
+
+      JOIN depolar d
+        ON d.id = ms.depo_id
+
+      WHERE u.aktif = 1
+        AND d.aktif = 1
+
+      ORDER BY u.ad
+    `)
+    .all();
+
+  return json(results);
+}
       // ================================
       // PARTİ / SKT
       // ================================
