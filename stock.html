@@ -493,8 +493,7 @@ async function loadStock(){
   try{
 
     const response =
-      await fetch("/api/mevcut-stoklar");
-
+  await fetch("/api/stok");
     if(!response.ok){
       throw new Error("Stok API hatası");
     }
