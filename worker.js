@@ -99,55 +99,7 @@ export default {
       }
 
 
-      // ================================
-      // FİRMALAR
-      // ================================
-
-      if (request.method === "GET" && path === "/api/firmalar") {
-
-        const { results } = await env.DB
-          .prepare(`
-            SELECT *
-            FROM firmalar
-            WHERE aktif = 1
-            ORDER BY id DESC
-          `)
-          .all();
-
-        return json(results);
-      }
-if (request.method === "POST" && path === "/api/firmalar") {
-
-  const body = await request.json();
-
-  if (!body.ad || !body.ad.trim()) {
-    return json({
-      ok: false,
-      error: "Firma adı zorunludur."
-    }, 400);
-  }
-
-  const result = await env.DB
-    .prepare(`
-      INSERT INTO firmalar
-      (ad, vergi_no, telefon, email, adres, aktif)
-      VALUES (?, ?, ?, ?, ?, 1)
-    `)
-    .bind(
-      body.ad.trim(),
-      body.vergi_no ?? null,
-      body.telefon ?? null,
-      body.email ?? null,
-      body.adres ?? null
-    )
-    .run();
-
-  return json({
-    ok: true,
-    id: result.meta.last_row_id
-  }, 201);
-}
-// ================================
+    // ================================
 // FİRMALAR
 // ================================
 
@@ -173,37 +125,7 @@ if (request.method === "GET" && path === "/api/firmalar") {
   return json(results);
 }
 
-if (request.method === "POST" && path === "/api/firmalar") {
 
-  const body = await request.json();
-
-  if (!body.ad || !body.ad.trim()) {
-    return json({
-      ok: false,
-      error: "Firma adı zorunludur."
-    }, 400);
-  }
-
-  const result = await env.DB
-    .prepare(`
-      INSERT INTO firmalar
-      (ad, vergi_no, telefon, email, adres, aktif)
-      VALUES (?, ?, ?, ?, ?, 1)
-    `)
-    .bind(
-      body.ad.trim(),
-      body.vergi_no ?? null,
-      body.telefon ?? null,
-      body.email ?? null,
-      body.adres ?? null
-    )
-    .run();
-
-  return json({
-    ok: true,
-    id: result.meta.last_row_id
-  }, 201);
-}
 if (request.method === "POST" && path === "/api/firmalar") {
 
   const body = await request.json();
@@ -245,6 +167,7 @@ if (request.method === "POST" && path === "/api/firmalar") {
     id: result.meta.last_row_id
   }, 201);
 }
+
       // ================================
       // ŞUBELER
       // ================================
