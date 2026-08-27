@@ -599,7 +599,7 @@ if (request.method === "POST" && path === "/api/urunler") {
     id: result.meta.last_row_id
   }, 201);
 }
-
+if (request.method === "GET" && path === "/api/urunler") {
 const { results } = await env.DB
           .prepare(`
             SELECT
