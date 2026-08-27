@@ -99,12 +99,13 @@ export default {
       }
 
 
-    // ================================
-// FİRMALAR
+// ================================
+// FİRMALAR - CRUD
 // ================================
 
+// GET /api/firmalar
+// Tüm aktif firmaları getir
 if (request.method === "GET" && path === "/api/firmalar") {
-
   const { results } = await env.DB
     .prepare(`
       SELECT
@@ -126,17 +127,86 @@ if (request.method === "GET" && path === "/api/firmalar") {
 }
 
 
+// /api/firmalar/:id
+const firmaMatch = path.match(/^\/api\/firmalar\/(\d+)$/);
+const firmaId = firmaMatch ? Number(firmaMatch[1]) : null;
+
+
+// GET /api/firmalar/:id
+// Tek firma getir
+if (request.method === "GET" && firmaId !== null) {
+
+  const firma = await env.DB
+    .prepare(`
+      SELECT
+        id,
+        ad,
+        vergi_no,
+        telefon,
+        email,
+        adres,
+        aktif,
+        olusturma_tarihi
+      FROM firmalar
+      WHERE id = ?
+        AND aktif = 1
+    `)
+    .bind(firmaId)
+    .first();
+
+  if (!firma) {
+    return json({
+      ok: false,
+      error: "Firma bulunamadı."
+    }, 404);
+  }
+
+  return json(firma);
+}
+
+
+// POST /api/firmalar
+// Yeni firma ekle
 if (request.method === "POST" && path === "/api/firmalar") {
 
   const body = await request.json();
 
-  if (!body.ad || !body.ad.trim()) {
+  const ad = String(body.ad ?? "").trim();
+  const vergiNo = String(body.vergi_no ?? "").trim() || null;
+  const telefon = String(body.telefon ?? "").trim() || null;
+  const email = String(body.email ?? "").trim() || null;
+  const adres = String(body.adres ?? "").trim() || null;
 
+  // Firma adı zorunlu
+  if (!ad) {
     return json({
       ok: false,
       error: "Firma adı zorunludur."
     }, 400);
+  }
 
+  // Vergi numarası mükerrer kontrolü
+  if (vergiNo) {
+
+    const mevcut = await env.DB
+      .prepare(`
+        SELECT id, ad
+        FROM firmalar
+        WHERE vergi_no = ?
+          AND aktif = 1
+        LIMIT 1
+      `)
+      .bind(vergiNo)
+      .first();
+
+    if (mevcut) {
+      return json({
+        ok: false,
+        error: "Bu vergi numarasıyla kayıtlı aktif bir firma zaten var.",
+        mevcut_firma_id: mevcut.id,
+        mevcut_firma: mevcut.ad
+      }, 409);
+    }
   }
 
   const result = await env.DB
@@ -153,43 +223,242 @@ if (request.method === "POST" && path === "/api/firmalar") {
       VALUES (?, ?, ?, ?, ?, 1)
     `)
     .bind(
-      body.ad.trim(),
-      body.vergi_no ?? null,
-      body.telefon ?? null,
-      body.email ?? null,
-      body.adres ?? null
+      ad,
+      vergiNo,
+      telefon,
+      email,
+      adres
     )
     .run();
+
+  const yeniFirma = await env.DB
+    .prepare(`
+      SELECT
+        id,
+        ad,
+        vergi_no,
+        telefon,
+        email,
+        adres,
+        aktif,
+        olusturma_tarihi
+      FROM firmalar
+      WHERE id = ?
+    `)
+    .bind(result.meta.last_row_id)
+    .first();
 
   return json({
     ok: true,
     mesaj: "Firma başarıyla oluşturuldu.",
-    id: result.meta.last_row_id
+    firma: yeniFirma
   }, 201);
 }
 
-      // ================================
-      // ŞUBELER
-      // ================================
 
-      if (request.method === "GET" && path === "/api/subeler") {
+// PUT /api/firmalar/:id
+// Firma güncelle
+if (request.method === "PUT" && firmaId !== null) {
 
-        const { results } = await env.DB
-          .prepare(`
-            SELECT
-              s.*,
-              f.ad AS firma_adi
-            FROM subeler s
-            JOIN firmalar f
-              ON f.id = s.firma_id
-            WHERE s.aktif = 1
-            ORDER BY s.id DESC
-          `)
-          .all();
+  const mevcut = await env.DB
+    .prepare(`
+      SELECT
+        id,
+        ad,
+        vergi_no,
+        telefon,
+        email,
+        adres
+      FROM firmalar
+      WHERE id = ?
+    `)
+    .bind(firmaId)
+    .first();
 
-        return json(results);
-      }
+  if (!mevcut) {
+    return json({
+      ok: false,
+      error: "Firma bulunamadı."
+    }, 404);
+  }
 
+  const body = await request.json();
+
+  const ad = String(body.ad ?? mevcut.ad ?? "").trim();
+  const vergiNo =
+    String(body.vergi_no ?? mevcut.vergi_no ?? "").trim() || null;
+
+  const telefon =
+    String(body.telefon ?? mevcut.telefon ?? "").trim() || null;
+
+  const email =
+    String(body.email ?? mevcut.email ?? "").trim() || null;
+
+  const adres =
+    String(body.adres ?? mevcut.adres ?? "").trim() || null;
+
+
+  // Firma adı zorunlu
+  if (!ad) {
+    return json({
+      ok: false,
+      error: "Firma adı zorunludur."
+    }, 400);
+  }
+
+
+  // Başka firmada aynı vergi numarası var mı?
+  if (vergiNo) {
+
+    const duplicate = await env.DB
+      .prepare(`
+        SELECT id, ad
+        FROM firmalar
+        WHERE vergi_no = ?
+          AND id != ?
+          AND aktif = 1
+        LIMIT 1
+      `)
+      .bind(vergiNo, firmaId)
+      .first();
+
+    if (duplicate) {
+      return json({
+        ok: false,
+        error: "Bu vergi numarası başka bir aktif firmaya ait.",
+        mevcut_firma_id: duplicate.id,
+        mevcut_firma: duplicate.ad
+      }, 409);
+    }
+  }
+
+
+  await env.DB
+    .prepare(`
+      UPDATE firmalar
+      SET
+        ad = ?,
+        vergi_no = ?,
+        telefon = ?,
+        email = ?,
+        adres = ?
+      WHERE id = ?
+    `)
+    .bind(
+      ad,
+      vergiNo,
+      telefon,
+      email,
+      adres,
+      firmaId
+    )
+    .run();
+
+
+  const guncelFirma = await env.DB
+    .prepare(`
+      SELECT
+        id,
+        ad,
+        vergi_no,
+        telefon,
+        email,
+        adres,
+        aktif,
+        olusturma_tarihi
+      FROM firmalar
+      WHERE id = ?
+    `)
+    .bind(firmaId)
+    .first();
+
+
+  return json({
+    ok: true,
+    mesaj: "Firma başarıyla güncellendi.",
+    firma: guncelFirma
+  });
+}
+
+
+// DELETE /api/firmalar/:id
+// Firmayı fiziksel olarak silmez.
+// Sadece pasifleştirir.
+if (request.method === "DELETE" && firmaId !== null) {
+
+  const mevcut = await env.DB
+    .prepare(`
+      SELECT id, ad
+      FROM firmalar
+      WHERE id = ?
+        AND aktif = 1
+    `)
+    .bind(firmaId)
+    .first();
+
+  if (!mevcut) {
+    return json({
+      ok: false,
+      error: "Firma bulunamadı veya zaten pasif."
+    }, 404);
+  }
+
+
+  // Bağlı kayıtları kontrol et
+  const bagli = await env.DB
+    .prepare(`
+      SELECT
+
+        (
+          SELECT COUNT(*)
+          FROM subeler
+          WHERE firma_id = ?
+        ) AS sube_sayisi,
+
+        (
+          SELECT COUNT(*)
+          FROM cariler
+          WHERE firma_id = ?
+        ) AS cari_sayisi,
+
+        (
+          SELECT COUNT(*)
+          FROM urunler
+          WHERE firma_id = ?
+        ) AS urun_sayisi
+
+    `)
+    .bind(
+      firmaId,
+      firmaId,
+      firmaId
+    )
+    .first();
+
+
+  // Soft delete
+  await env.DB
+    .prepare(`
+      UPDATE firmalar
+      SET aktif = 0
+      WHERE id = ?
+    `)
+    .bind(firmaId)
+    .run();
+
+
+  return json({
+    ok: true,
+    mesaj: "Firma pasifleştirildi.",
+    id: firmaId,
+
+    bagli_kayitlar: {
+      sube: Number(bagli?.sube_sayisi || 0),
+      cari: Number(bagli?.cari_sayisi || 0),
+      urun: Number(bagli?.urun_sayisi || 0)
+    }
+  });
+}
 
       // ================================
       // KATEGORİLER
