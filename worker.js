@@ -600,12 +600,7 @@ if (request.method === "POST" && path === "/api/urunler") {
   }, 201);
 }
 
-    ok: true,
-    mesaj: "Ürün başarıyla oluşturuldu.",
-    id: result.meta.last_row_id
-  }, 201);
-}
-        const { results } = await env.DB
+const { results } = await env.DB
           .prepare(`
             SELECT
               u.*,
