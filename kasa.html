@@ -1,1 +1,2060 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#07111f">
+<title>Kasa Yönetimi | SKT Stok & Cari Takip</title>
 
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Arial,Helvetica,sans-serif;
+  background:#f4f6f9;
+  color:#182230;
+}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+
+.topbar{
+  height:64px;
+  background:#07111f;
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 22px;
+  position:sticky;
+  top:0;
+  z-index:50;
+}
+.brand{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.brand-icon{
+  width:40px;
+  height:40px;
+  border-radius:10px;
+  display:grid;
+  place-items:center;
+  background:#16283e;
+}
+.brand strong{
+  display:block;
+  font-size:15px;
+}
+.brand small{
+  opacity:.65;
+  font-size:10px;
+}
+.top-actions{
+  display:flex;
+  gap:8px;
+}
+.top-actions button,
+.top-actions a{
+  color:#fff;
+  background:#16283e;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:9px;
+  padding:9px 12px;
+  text-decoration:none;
+}
+
+.layout{
+  display:flex;
+  min-height:calc(100vh - 64px);
+}
+.sidebar{
+  width:245px;
+  background:#0b1726;
+  color:#dce5ef;
+  padding:18px 12px;
+  flex:none;
+}
+.menu-title{
+  font-size:10px;
+  opacity:.45;
+  letter-spacing:1px;
+  margin:16px 10px 8px;
+}
+.menu-item{
+  display:flex;
+  align-items:center;
+  gap:11px;
+  padding:11px 12px;
+  margin:3px 0;
+  color:#dce5ef;
+  text-decoration:none;
+  border-radius:9px;
+  font-size:14px;
+}
+.menu-item:hover{
+  background:rgba(255,255,255,.07);
+}
+.menu-item.active{
+  background:#17304c;
+  color:#fff;
+}
+
+.main{
+  flex:1;
+  padding:28px;
+  min-width:0;
+}
+.page-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:15px;
+  margin-bottom:22px;
+}
+.page-head h1{
+  margin:0 0 5px;
+  font-size:28px;
+}
+.page-head p{
+  margin:0;
+  color:#687585;
+}
+
+.btn{
+  border:1px solid #d7dde5;
+  background:#fff;
+  color:#182230;
+  padding:10px 14px;
+  border-radius:9px;
+  font-weight:600;
+}
+.btn:hover{
+  background:#f1f4f7;
+}
+.btn.primary{
+  background:#0d6efd;
+  border-color:#0d6efd;
+  color:#fff;
+}
+.btn.danger{
+  color:#c62828;
+}
+.btn:disabled{
+  opacity:.55;
+  cursor:not-allowed;
+}
+
+.stats{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:16px;
+  margin-bottom:20px;
+}
+.stat{
+  background:#fff;
+  border:1px solid #e1e6ec;
+  border-radius:14px;
+  padding:18px;
+}
+.stat span{
+  display:block;
+  font-size:12px;
+  color:#718096;
+  margin-bottom:8px;
+}
+.stat strong{
+  font-size:24px;
+}
+
+.panel{
+  background:#fff;
+  border:1px solid #e1e6ec;
+  border-radius:14px;
+  padding:18px;
+  margin-bottom:18px;
+}
+.panel-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:15px;
+  margin-bottom:15px;
+}
+.panel-head h2{
+  margin:0 0 4px;
+  font-size:18px;
+}
+.panel-head p{
+  margin:0;
+  color:#718096;
+  font-size:13px;
+}
+
+.filters{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+}
+.filters input,
+.filters select{
+  min-height:42px;
+  padding:9px 12px;
+  border:1px solid #d6dde6;
+  border-radius:9px;
+  background:#fff;
+  outline:none;
+}
+.filters input{
+  flex:1;
+  min-width:220px;
+}
+.filters input:focus,
+.filters select:focus,
+.form-grid input:focus,
+.form-grid select:focus,
+.form-grid textarea:focus{
+  border-color:#0d6efd;
+}
+
+.table-wrap{
+  overflow:auto;
+}
+table{
+  width:100%;
+  border-collapse:collapse;
+  min-width:850px;
+}
+th,td{
+  padding:12px 10px;
+  border-bottom:1px solid #edf0f3;
+  text-align:left;
+}
+th{
+  font-size:11px;
+  color:#718096;
+  text-transform:uppercase;
+}
+td{
+  font-size:14px;
+}
+.name{
+  font-weight:700;
+}
+.sub{
+  font-size:12px;
+  color:#8793a2;
+  margin-top:3px;
+}
+.badge{
+  display:inline-flex;
+  align-items:center;
+  padding:5px 9px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:600;
+}
+.badge.active{
+  background:#e8f7ed;
+  color:#19743a;
+}
+.badge.passive{
+  background:#fdebec;
+  color:#a51d2a;
+}
+.badge.cash{
+  background:#eaf2ff;
+  color:#2456a6;
+}
+.actions{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+}
+.small{
+  border:1px solid #d8dee7;
+  background:#fff;
+  border-radius:7px;
+  padding:6px 8px;
+  font-size:12px;
+}
+.small:hover{
+  background:#f4f6f9;
+}
+.empty{
+  text-align:center;
+  padding:35px!important;
+  color:#7a8796;
+}
+.error{
+  color:#b42318!important;
+}
+
+.modal{
+  position:fixed;
+  inset:0;
+  z-index:1000;
+  background:rgba(4,10,18,.62);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+}
+.modal.hidden{
+  display:none;
+}
+.modal-box{
+  width:min(720px,100%);
+  max-height:92vh;
+  overflow:auto;
+  background:#fff;
+  border-radius:16px;
+  padding:22px;
+  box-shadow:0 20px 70px rgba(0,0,0,.28);
+}
+.modal-head{
+  display:flex;
+  justify-content:space-between;
+  gap:15px;
+  margin-bottom:20px;
+}
+.modal-head h2{
+  margin:0 0 5px;
+}
+.modal-head p{
+  margin:0;
+  color:#718096;
+}
+.close{
+  border:0;
+  background:transparent;
+  font-size:28px;
+  width:40px;
+  height:40px;
+}
+.form-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:15px;
+}
+.field{
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+}
+.field.full{
+  grid-column:1/-1;
+}
+.field label{
+  font-size:12px;
+  font-weight:700;
+}
+.field input,
+.field select,
+.field textarea{
+  width:100%;
+  padding:10px 11px;
+  border:1px solid #d6dde6;
+  border-radius:9px;
+  outline:none;
+}
+.checkbox{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.checkbox input{
+  width:auto!important;
+}
+.modal-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+  margin-top:20px;
+}
+.form-error{
+  margin-top:15px;
+  padding:10px 12px;
+  background:#fff0f0;
+  color:#b42318;
+  border-radius:8px;
+  font-size:13px;
+}
+.form-error.hidden{
+  display:none;
+}
+
+.toast{
+  position:fixed;
+  right:20px;
+  bottom:20px;
+  z-index:2000;
+  padding:12px 16px;
+  border-radius:9px;
+  background:#182230;
+  color:#fff;
+  box-shadow:0 10px 30px rgba(0,0,0,.2);
+}
+.toast.hidden{
+  display:none;
+}
+.toast.error{
+  background:#b42318;
+}
+
+.detail-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:12px;
+}
+.detail-item{
+  padding:13px;
+  border-radius:10px;
+  background:#f5f7fa;
+}
+.detail-item span{
+  display:block;
+  font-size:11px;
+  color:#718096;
+  margin-bottom:5px;
+}
+.detail-item strong{
+  word-break:break-word;
+}
+
+@media(max-width:900px){
+  .sidebar{
+    width:205px;
+  }
+  .stats{
+    grid-template-columns:repeat(2,1fr);
+  }
+}
+@media(max-width:700px){
+  .layout{
+    display:block;
+  }
+  .sidebar{
+    width:100%;
+    padding:8px;
+  }
+  .sidebar nav{
+    display:flex;
+    overflow:auto;
+    gap:4px;
+  }
+  .menu-title{
+    display:none;
+  }
+  .menu-item{
+    white-space:nowrap;
+  }
+  .main{
+    padding:16px;
+  }
+  .page-head{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+  .stats{
+    grid-template-columns:1fr;
+  }
+  .form-grid,
+  .detail-grid{
+    grid-template-columns:1fr;
+  }
+  .field.full{
+    grid-column:auto;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header class="topbar">
+
+  <div class="brand">
+    <div class="brand-icon">💰</div>
+    <div>
+      <strong>SKT STOK</strong>
+      <small>CARİ TAKİP</small>
+    </div>
+  </div>
+
+  <div class="top-actions">
+    <button onclick="loadKasalar()">↻ Yenile</button>
+    <a href="/index.html">🏠 Dashboard</a>
+  </div>
+
+</header>
+
+
+<div class="layout">
+
+<aside class="sidebar">
+
+  <div class="menu-title">ANA MENÜ</div>
+
+  <nav>
+
+    <a class="menu-item" href="/index.html">
+      🏠 <span>Dashboard</span>
+    </a>
+
+    <a class="menu-item" href="/products.html">
+      📦 <span>Ürünler</span>
+    </a>
+
+    <a class="menu-item" href="/stock.html">
+      📊 <span>Stok</span>
+    </a>
+
+    <a class="menu-item" href="/skt.html">
+      ⏰ <span>SKT Takip</span>
+    </a>
+
+    <a class="menu-item" href="/sayim.html">
+      📝 <span>Sayım</span>
+    </a>
+
+    <a class="menu-item" href="/fire.html">
+      ⚠️ <span>Fire</span>
+    </a>
+
+
+    <div class="menu-title">TİCARİ</div>
+
+    <a class="menu-item" href="/firmalar.html">
+      🏢 <span>Firmalar</span>
+    </a>
+
+    <a class="menu-item" href="/subeler.html">
+      🏬 <span>Şubeler</span>
+    </a>
+
+    <a class="menu-item" href="/cariler.html">
+      👥 <span>Cariler</span>
+    </a>
+
+    <a class="menu-item active" href="/kasa.html">
+      💰 <span>Kasa</span>
+    </a>
+
+    <a class="menu-item" href="/satin-alma.html">
+      🛒 <span>Satın Alma</span>
+    </a>
+
+    <a class="menu-item" href="/mal-kabul.html">
+      🚚 <span>Mal Kabul</span>
+    </a>
+
+
+    <div class="menu-title">RAPORLAMA</div>
+
+    <a class="menu-item" href="/raporlar.html">
+      📈 <span>Raporlar</span>
+    </a>
+
+    <a class="menu-item" href="/kullanicilar.html">
+      🔐 <span>Kullanıcılar</span>
+    </a>
+
+  </nav>
+
+</aside>
+
+
+<main class="main">
+
+  <div class="page-head">
+
+    <div>
+      <h1>Kasa Yönetimi</h1>
+      <p>Kasalarınızı, bakiyelerinizi ve durumlarını yönetin.</p>
+    </div>
+
+    <button class="btn primary" onclick="openKasaModal()">
+      ＋ Yeni Kasa
+    </button>
+
+  </div>
+
+
+  <section class="stats">
+
+    <div class="stat">
+      <span>Toplam Kasa</span>
+      <strong id="totalCount">0</strong>
+    </div>
+
+    <div class="stat">
+      <span>Aktif Kasa</span>
+      <strong id="activeCount">0</strong>
+    </div>
+
+    <div class="stat">
+      <span>Toplam Bakiye</span>
+      <strong id="totalBalance">0,00 ₺</strong>
+    </div>
+
+    <div class="stat">
+      <span>Ortalama Bakiye</span>
+      <strong id="averageBalance">0,00 ₺</strong>
+    </div>
+
+  </section>
+
+
+  <section class="panel">
+
+    <div class="filters">
+
+      <input
+        id="search"
+        type="search"
+        placeholder="Kasa adı veya kodu ara...">
+
+      <select id="statusFilter">
+
+        <option value="">Tüm Durumlar</option>
+        <option value="1">Aktif</option>
+        <option value="0">Pasif</option>
+
+      </select>
+
+      <button class="btn" onclick="applyFilters()">
+        🔎 Filtrele
+      </button>
+
+      <button class="btn" onclick="clearFilters()">
+        Temizle
+      </button>
+
+    </div>
+
+  </section>
+
+
+  <section class="panel">
+
+    <div class="panel-head">
+
+      <div>
+        <h2>Kasa Listesi</h2>
+        <p id="listInfo">Yükleniyor...</p>
+      </div>
+
+      <button class="btn" onclick="openKasaModal()">
+        ＋ Kasa Ekle
+      </button>
+
+    </div>
+
+
+    <div class="table-wrap">
+
+      <table>
+
+        <thead>
+
+          <tr>
+            <th>Kod</th>
+            <th>Kasa</th>
+            <th>Tür</th>
+            <th>Şube</th>
+            <th>Bakiye</th>
+            <th>Durum</th>
+            <th>İşlemler</th>
+          </tr>
+
+        </thead>
+
+        <tbody id="kasaTable">
+
+          <tr>
+            <td colspan="7" class="empty">
+              Kasalar yükleniyor...
+            </td>
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </section>
+
+</main>
+
+</div>
+
+
+<!-- KASA FORM -->
+
+<div id="kasaModal" class="modal hidden">
+
+  <div class="modal-box">
+
+    <div class="modal-head">
+
+      <div>
+        <h2 id="modalTitle">Yeni Kasa</h2>
+        <p>Kasa bilgilerini girin.</p>
+      </div>
+
+      <button class="close" onclick="closeKasaModal()">×</button>
+
+    </div>
+
+
+    <form id="kasaForm" onsubmit="saveKasa(event)">
+
+      <input type="hidden" id="kasaId">
+
+
+      <div class="form-grid">
+
+        <div class="field">
+          <label>Kasa Kodu *</label>
+          <input id="kod" maxlength="50" required>
+        </div>
+
+
+        <div class="field">
+          <label>Kasa Adı *</label>
+          <input id="ad" maxlength="200" required>
+        </div>
+
+
+        <div class="field">
+
+          <label>Kasa Türü</label>
+
+          <select id="tur">
+
+            <option value="nakit">Nakit</option>
+            <option value="pos">POS</option>
+            <option value="banka">Banka</option>
+            <option value="diger">Diğer</option>
+
+          </select>
+
+        </div>
+
+
+        <div class="field">
+          <label>Şube ID</label>
+          <input
+            id="sube_id"
+            type="number"
+            min="1"
+            placeholder="Opsiyonel">
+        </div>
+
+
+        <div class="field">
+
+          <label>Başlangıç Bakiyesi</label>
+
+          <input
+            id="bakiye"
+            type="number"
+            step="0.01"
+            value="0">
+
+        </div>
+
+
+        <div class="field">
+
+          <label>Para Birimi</label>
+
+          <select id="para_birimi">
+
+            <option value="TRY">TRY - Türk Lirası</option>
+            <option value="USD">USD - Dolar</option>
+            <option value="EUR">EUR - Euro</option>
+
+          </select>
+
+        </div>
+
+
+        <div class="field full">
+
+          <label>Açıklama</label>
+
+          <textarea
+            id="aciklama"
+            rows="3"
+            maxlength="500"
+            placeholder="Kasa hakkında açıklama"></textarea>
+
+        </div>
+
+
+        <div class="field">
+
+          <label class="checkbox">
+
+            <input
+              id="aktif"
+              type="checkbox"
+              checked>
+
+            Aktif kasa
+
+          </label>
+
+        </div>
+
+      </div>
+
+
+      <div id="formError" class="form-error hidden"></div>
+
+
+      <div class="modal-actions">
+
+        <button
+          type="button"
+          class="btn"
+          onclick="closeKasaModal()">
+          İptal
+        </button>
+
+        <button
+          type="submit"
+          class="btn primary"
+          id="saveButton">
+          Kaydet
+        </button>
+
+      </div>
+
+    </form>
+
+  </div>
+
+</div>
+
+
+<!-- DETAY -->
+
+<div id="detailModal" class="modal hidden">
+
+  <div class="modal-box">
+
+    <div class="modal-head">
+
+      <div>
+        <h2>Kasa Detayı</h2>
+        <p id="detailSubtitle"></p>
+      </div>
+
+      <button class="close" onclick="closeDetailModal()">×</button>
+
+    </div>
+
+    <div id="detailContent"></div>
+
+  </div>
+
+</div>
+
+
+<div id="toast" class="toast hidden"></div>
+
+
+<script>
+
+const API = "/api";
+
+let kasalar = [];
+
+
+async function api(endpoint, options = {}) {
+
+  const response =
+    await fetch(
+      API + endpoint,
+      {
+        headers:{
+          "Content-Type":"application/json",
+          ...(options.headers || {})
+        },
+        ...options
+      }
+    );
+
+
+  const data =
+    await response
+      .json()
+      .catch(() => ({}));
+
+
+  if (!response.ok) {
+
+    throw new Error(
+      data.error ||
+      `HTTP ${response.status}`
+    );
+
+  }
+
+
+  return data;
+
+}
+
+
+function escapeHtml(value){
+
+  return String(value ?? "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+
+}
+
+
+function money(value, currency="TRY"){
+
+  const number =
+    Number(value || 0);
+
+  try{
+
+    return new Intl.NumberFormat(
+      "tr-TR",
+      {
+        style:"currency",
+        currency
+      }
+    ).format(number);
+
+  }catch{
+
+    return number.toLocaleString(
+      "tr-TR",
+      {
+        minimumFractionDigits:2
+      }
+    ) + " ₺";
+
+  }
+
+}
+
+
+function isActive(kasa){
+
+  return (
+    Number(kasa.aktif) === 1 ||
+    kasa.aktif === true
+  );
+
+}
+
+
+function kasaName(kasa){
+
+  return (
+    kasa.ad ||
+    kasa.kasa_adi ||
+    kasa.name ||
+    "-"
+  );
+
+}
+
+
+function kasaCode(kasa){
+
+  return (
+    kasa.kod ||
+    kasa.kasa_kodu ||
+    kasa.code ||
+    "-"
+  );
+
+}
+
+
+function kasaBalance(kasa){
+
+  return Number(
+    kasa.bakiye ??
+    kasa.balance ??
+    kasa.tutar ??
+    0
+  );
+
+}
+
+
+function kasaType(kasa){
+
+  return (
+    kasa.tur ||
+    kasa.tip ||
+    kasa.kasa_turu ||
+    "diger"
+  );
+
+}
+
+
+function typeLabel(value){
+
+  const v =
+    String(value || "")
+      .toLocaleLowerCase("tr-TR");
+
+  if(v === "nakit") return "Nakit";
+  if(v === "pos") return "POS";
+  if(v === "banka") return "Banka";
+
+  return "Diğer";
+
+}
+
+
+async function loadKasalar(){
+
+  const tbody =
+    document.getElementById(
+      "kasaTable"
+    );
+
+
+  tbody.innerHTML = `
+    <tr>
+      <td colspan="7" class="empty">
+        Kasalar yükleniyor...
+      </td>
+    </tr>
+  `;
+
+
+  try{
+
+    const result =
+      await api("/kasalar");
+
+
+    kasalar =
+      result.data ||
+      result.results ||
+      result ||
+      [];
+
+
+    if(!Array.isArray(kasalar)){
+      kasalar = [];
+    }
+
+
+    renderKasalar();
+
+  }catch(error){
+
+    console.error(error);
+
+
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7"
+            class="empty error">
+          ${escapeHtml(error.message)}
+        </td>
+      </tr>
+    `;
+
+  }
+
+}
+
+
+function filteredKasalar(){
+
+  const search =
+    document
+      .getElementById("search")
+      .value
+      .trim()
+      .toLocaleLowerCase("tr-TR");
+
+
+  const status =
+    document
+      .getElementById("statusFilter")
+      .value;
+
+
+  return kasalar.filter(kasa => {
+
+    const text = (
+
+      kasaCode(kasa) +
+      " " +
+      kasaName(kasa)
+
+    )
+    .toLocaleLowerCase("tr-TR");
+
+
+    const searchOk =
+      !search ||
+      text.includes(search);
+
+
+    const statusOk =
+      status === "" ||
+      (
+        status === "1" &&
+        isActive(kasa)
+      ) ||
+      (
+        status === "0" &&
+        !isActive(kasa)
+      );
+
+
+    return searchOk && statusOk;
+
+  });
+
+}
+
+
+function renderKasalar(){
+
+  const list =
+    filteredKasalar();
+
+
+  const tbody =
+    document.getElementById(
+      "kasaTable"
+    );
+
+
+  const active =
+    kasalar.filter(isActive);
+
+
+  const total =
+    kasalar.reduce(
+      (sum,k) =>
+        sum + kasaBalance(k),
+      0
+    );
+
+
+  const average =
+    kasalar.length
+      ? total / kasalar.length
+      : 0;
+
+
+  document.getElementById(
+    "totalCount"
+  ).textContent =
+    kasalar.length;
+
+
+  document.getElementById(
+    "activeCount"
+  ).textContent =
+    active.length;
+
+
+  document.getElementById(
+    "totalBalance"
+  ).textContent =
+    money(total);
+
+
+  document.getElementById(
+    "averageBalance"
+  ).textContent =
+    money(average);
+
+
+  document.getElementById(
+    "listInfo"
+  ).textContent =
+    `${list.length} / ${kasalar.length} kasa gösteriliyor`;
+
+
+  if(!list.length){
+
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" class="empty">
+          Kasa bulunamadı.
+        </td>
+      </tr>
+    `;
+
+    return;
+
+  }
+
+
+  tbody.innerHTML =
+    list.map(kasa => {
+
+      const id =
+        Number(kasa.id);
+
+
+      const currency =
+        kasa.para_birimi ||
+        kasa.currency ||
+        "TRY";
+
+
+      return `
+
+        <tr>
+
+          <td>
+            <strong>
+              ${escapeHtml(
+                kasaCode(kasa)
+              )}
+            </strong>
+          </td>
+
+
+          <td>
+
+            <div class="name">
+              ${escapeHtml(
+                kasaName(kasa)
+              )}
+            </div>
+
+            ${
+              kasa.aciklama
+                ? `
+                  <div class="sub">
+                    ${escapeHtml(
+                      kasa.aciklama
+                    )}
+                  </div>
+                `
+                : ""
+            }
+
+          </td>
+
+
+          <td>
+            <span class="badge cash">
+              ${escapeHtml(
+                typeLabel(
+                  kasaType(kasa)
+                )
+              )}
+            </span>
+          </td>
+
+
+          <td>
+            ${
+              kasa.sube_adi ||
+              kasa.sube ||
+              kasa.sube_id ||
+              "-"
+            }
+          </td>
+
+
+          <td>
+            <strong>
+              ${money(
+                kasaBalance(kasa),
+                currency
+              )}
+            </strong>
+          </td>
+
+
+          <td>
+
+            ${
+              isActive(kasa)
+                ? `
+                  <span class="badge active">
+                    Aktif
+                  </span>
+                `
+                : `
+                  <span class="badge passive">
+                    Pasif
+                  </span>
+                `
+            }
+
+          </td>
+
+
+          <td>
+
+            <div class="actions">
+
+              <button
+                class="small"
+                onclick="showDetail(${id})">
+                Gör
+              </button>
+
+              <button
+                class="small"
+                onclick="editKasa(${id})">
+                Düzenle
+              </button>
+
+              ${
+                isActive(kasa)
+                  ? `
+                    <button
+                      class="small"
+                      onclick="changeStatus(${id},0)">
+                      Pasifleştir
+                    </button>
+                  `
+                  : `
+                    <button
+                      class="small"
+                      onclick="changeStatus(${id},1)">
+                      Aktifleştir
+                    </button>
+                  `
+              }
+
+            </div>
+
+          </td>
+
+        </tr>
+
+      `;
+
+    }).join("");
+
+}
+
+
+function applyFilters(){
+
+  renderKasalar();
+
+}
+
+
+function clearFilters(){
+
+  document.getElementById(
+    "search"
+  ).value = "";
+
+
+  document.getElementById(
+    "statusFilter"
+  ).value = "";
+
+
+  renderKasalar();
+
+}
+
+
+function resetForm(){
+
+  document
+    .getElementById("kasaForm")
+    .reset();
+
+
+  document.getElementById(
+    "kasaId"
+  ).value = "";
+
+
+  document.getElementById(
+    "modalTitle"
+  ).textContent =
+    "Yeni Kasa";
+
+
+  document.getElementById(
+    "aktif"
+  ).checked = true;
+
+
+  document.getElementById(
+    "bakiye"
+  ).value = "0";
+
+
+  document.getElementById(
+    "para_birimi"
+  ).value = "TRY";
+
+
+  document.getElementById(
+    "formError"
+  ).classList.add(
+    "hidden"
+  );
+
+}
+
+
+function openKasaModal(kasa=null){
+
+  resetForm();
+
+
+  document.getElementById(
+    "kasaModal"
+  ).classList.remove(
+    "hidden"
+  );
+
+
+  if(!kasa) return;
+
+
+  document.getElementById(
+    "modalTitle"
+  ).textContent =
+    "Kasa Düzenle";
+
+
+  document.getElementById(
+    "kasaId"
+  ).value =
+    kasa.id || "";
+
+
+  document.getElementById(
+    "kod"
+  ).value =
+    kasa.kod ||
+    kasa.kasa_kodu ||
+    kasa.code ||
+    "";
+
+
+  document.getElementById(
+    "ad"
+  ).value =
+    kasa.ad ||
+    kasa.kasa_adi ||
+    kasa.name ||
+    "";
+
+
+  document.getElementById(
+    "tur"
+  ).value =
+    kasa.tur ||
+    kasa.tip ||
+    kasa.kasa_turu ||
+    "nakit";
+
+
+  document.getElementById(
+    "sube_id"
+  ).value =
+    kasa.sube_id ||
+    "";
+
+
+  document.getElementById(
+    "bakiye"
+  ).value =
+    kasa.bakiye ??
+    kasa.balance ??
+    "0";
+
+
+  document.getElementById(
+    "para_birimi"
+  ).value =
+    kasa.para_birimi ||
+    kasa.currency ||
+    "TRY";
+
+
+  document.getElementById(
+    "aciklama"
+  ).value =
+    kasa.aciklama ||
+    "";
+
+
+  document.getElementById(
+    "aktif"
+  ).checked =
+    isActive(kasa);
+
+}
+
+
+function closeKasaModal(){
+
+  document.getElementById(
+    "kasaModal"
+  ).classList.add(
+    "hidden"
+  );
+
+}
+
+
+async function saveKasa(event){
+
+  event.preventDefault();
+
+
+  const button =
+    document.getElementById(
+      "saveButton"
+    );
+
+
+  const errorBox =
+    document.getElementById(
+      "formError"
+    );
+
+
+  button.disabled = true;
+
+  button.textContent =
+    "Kaydediliyor...";
+
+
+  errorBox.classList.add(
+    "hidden"
+  );
+
+
+  try{
+
+    const id =
+      document.getElementById(
+        "kasaId"
+      ).value;
+
+
+    const kod =
+      document.getElementById(
+        "kod"
+      ).value.trim();
+
+
+    const ad =
+      document.getElementById(
+        "ad"
+      ).value.trim();
+
+
+    if(!kod){
+      throw new Error(
+        "Kasa kodu zorunludur."
+      );
+    }
+
+
+    if(!ad){
+      throw new Error(
+        "Kasa adı zorunludur."
+      );
+    }
+
+
+    const subeId =
+      document.getElementById(
+        "sube_id"
+      ).value;
+
+
+    const data = {
+
+      kod,
+
+      kasa_kodu: kod,
+
+      ad,
+
+      kasa_adi: ad,
+
+      tur:
+        document.getElementById(
+          "tur"
+        ).value,
+
+      kasa_turu:
+        document.getElementById(
+          "tur"
+        ).value,
+
+      sube_id:
+        subeId
+          ? Number(subeId)
+          : null,
+
+      bakiye:
+        Number(
+          document.getElementById(
+            "bakiye"
+          ).value || 0
+        ),
+
+      para_birimi:
+        document.getElementById(
+          "para_birimi"
+        ).value,
+
+      currency:
+        document.getElementById(
+          "para_birimi"
+        ).value,
+
+      aciklama:
+        document.getElementById(
+          "aciklama"
+        ).value.trim(),
+
+      aktif:
+        document.getElementById(
+          "aktif"
+        ).checked
+          ? 1
+          : 0
+
+    };
+
+
+    if(id){
+
+      await api(
+        `/kasalar/${id}`,
+        {
+          method:"PUT",
+          body:JSON.stringify(data)
+        }
+      );
+
+
+      showToast(
+        "Kasa güncellendi."
+      );
+
+    }else{
+
+      await api(
+        "/kasalar",
+        {
+          method:"POST",
+          body:JSON.stringify(data)
+        }
+      );
+
+
+      showToast(
+        "Kasa oluşturuldu."
+      );
+
+    }
+
+
+    closeKasaModal();
+
+    await loadKasalar();
+
+
+  }catch(error){
+
+    console.error(error);
+
+
+    errorBox.textContent =
+      error.message;
+
+
+    errorBox.classList.remove(
+      "hidden"
+    );
+
+  }finally{
+
+    button.disabled = false;
+
+    button.textContent =
+      "Kaydet";
+
+  }
+
+}
+
+
+async function editKasa(id){
+
+  try{
+
+    const result =
+      await api(
+        `/kasalar/${id}`
+      );
+
+
+    const kasa =
+      result.data ||
+      result;
+
+
+    openKasaModal(kasa);
+
+  }catch(error){
+
+    showToast(
+      error.message,
+      "error"
+    );
+
+  }
+
+}
+
+
+async function changeStatus(id,status){
+
+  const kasa =
+    kasalar.find(
+      k =>
+        Number(k.id) ===
+        Number(id)
+    );
+
+
+  if(!kasa) return;
+
+
+  const name =
+    kasaName(kasa);
+
+
+  const action =
+    status
+      ? "aktifleştirmek"
+      : "pasifleştirmek";
+
+
+  if(
+    !confirm(
+      `"${name}" kasasını ${action} istiyor musunuz?`
+    )
+  ){
+
+    return;
+
+  }
+
+
+  try{
+
+    await api(
+      `/kasalar/${id}`,
+      {
+        method:"PUT",
+        body:JSON.stringify({
+          aktif:status
+        })
+      }
+    );
+
+
+    showToast(
+      status
+        ? "Kasa aktifleştirildi."
+        : "Kasa pasifleştirildi."
+    );
+
+
+    await loadKasalar();
+
+  }catch(error){
+
+    showToast(
+      error.message,
+      "error"
+    );
+
+  }
+
+}
+
+
+function showDetail(id){
+
+  const kasa =
+    kasalar.find(
+      k =>
+        Number(k.id) ===
+        Number(id)
+    );
+
+
+  if(!kasa) return;
+
+
+  const currency =
+    kasa.para_birimi ||
+    kasa.currency ||
+    "TRY";
+
+
+  document.getElementById(
+    "detailSubtitle"
+  ).textContent =
+    kasaName(kasa);
+
+
+  document.getElementById(
+    "detailContent"
+  ).innerHTML = `
+
+    <div class="detail-grid">
+
+      <div class="detail-item">
+        <span>Kasa Kodu</span>
+        <strong>
+          ${escapeHtml(
+            kasaCode(kasa)
+          )}
+        </strong>
+      </div>
+
+
+      <div class="detail-item">
+        <span>Kasa Adı</span>
+        <strong>
+          ${escapeHtml(
+            kasaName(kasa)
+          )}
+        </strong>
+      </div>
+
+
+      <div class="detail-item">
+        <span>Kasa Türü</span>
+        <strong>
+          ${escapeHtml(
+            typeLabel(
+              kasaType(kasa)
+            )
+          )}
+        </strong>
+      </div>
+
+
+      <div class="detail-item">
+        <span>Şube</span>
+        <strong>
+          ${escapeHtml(
+            kasa.sube_adi ||
+            kasa.sube ||
+            kasa.sube_id ||
+            "-"
+          )}
+        </strong>
+      </div>
+
+
+      <div class="detail-item">
+        <span>Bakiye</span>
+        <strong>
+          ${money(
+            kasaBalance(kasa),
+            currency
+          )}
+        </strong>
+      </div>
+
+
+      <div class="detail-item">
+        <span>Para Birimi</span>
+        <strong>
+          ${escapeHtml(currency)}
+        </strong>
+      </div>
+
+
+      <div class="detail-item">
+        <span>Durum</span>
+        <strong>
+          ${
+            isActive(kasa)
+              ? "Aktif"
+              : "Pasif"
+          }
+        </strong>
+      </div>
+
+
+      <div class="detail-item">
+        <span>ID</span>
+        <strong>
+          ${escapeHtml(kasa.id)}
+        </strong>
+      </div>
+
+
+      <div class="detail-item"
+           style="grid-column:1/-1">
+
+        <span>Açıklama</span>
+
+        <strong>
+          ${escapeHtml(
+            kasa.aciklama ||
+            "-"
+          )}
+        </strong>
+
+      </div>
+
+    </div>
+
+  `;
+
+
+  document.getElementById(
+    "detailModal"
+  ).classList.remove(
+    "hidden"
+  );
+
+}
+
+
+function closeDetailModal(){
+
+  document.getElementById(
+    "detailModal"
+  ).classList.add(
+    "hidden"
+  );
+
+}
+
+
+function showToast(
+  message,
+  type="success"
+){
+
+  const toast =
+    document.getElementById(
+      "toast"
+    );
+
+
+  toast.textContent =
+    message;
+
+
+  toast.className =
+    "toast " + type;
+
+
+  setTimeout(
+    () =>
+      toast.classList.add(
+        "hidden"
+      ),
+    3000
+  );
+
+}
+
+
+document.getElementById(
+  "search"
+).addEventListener(
+  "input",
+  renderKasalar
+);
+
+
+document.getElementById(
+  "statusFilter"
+).addEventListener(
+  "change",
+  renderKasalar
+);
+
+
+document.addEventListener(
+  "click",
+  event => {
+
+    if(
+      event.target.id ===
+      "kasaModal"
+    ){
+      closeKasaModal();
+    }
+
+
+    if(
+      event.target.id ===
+      "detailModal"
+    ){
+      closeDetailModal();
+    }
+
+  }
+);
+
+
+document.addEventListener(
+  "keydown",
+  event => {
+
+    if(
+      event.key === "Escape"
+    ){
+
+      closeKasaModal();
+
+      closeDetailModal();
+
+    }
+
+  }
+);
+
+
+document.addEventListener(
+  "DOMContentLoaded",
+  loadKasalar
+);
+
+</script>
+
+</body>
+</html>
