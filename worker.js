@@ -1532,7 +1532,7 @@ async function deleteSatinAlma(DB, id) {
   .run();
 
   return ok();
-
+}
 async function route(request, env) {
 
   const DB = env.DB;
