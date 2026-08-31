@@ -1150,8 +1150,446 @@ async function reports(DB) {
     }
   });
 }
+/* =========================================================
+   11 - SATIN ALMA
+   ========================================================= */
+
+async function listSatinAlma(DB, request) {
+
+  const url = new URL(request.url);
+  const search = text(url.searchParams.get("search"));
+
+  let sql = `
+    SELECT
+      s.*,
+      f.ad AS firma_adi,
+      b.ad AS sube_adi,
+      c.ad AS cari_adi
+    FROM satin_alma_siparisleri s
+    JOIN firmalar f
+      ON f.id = s.firma_id
+    JOIN subeler b
+      ON b.id = s.sube_id
+    LEFT JOIN cariler c
+      ON c.id = s.cari_id
+  `;
+
+  const params = [];
+
+  if (search) {
+    sql += `
+      WHERE
+        s.siparis_no LIKE ?
+        OR f.ad LIKE ?
+        OR b.ad LIKE ?
+        OR c.ad LIKE ?
+    `;
+
+    params.push(
+      `%${search}%`,
+      `%${search}%`,
+      `%${search}%`,
+      `%${search}%`
+    );
+  }
+
+  sql += `
+    ORDER BY s.id DESC
+  `;
+
+  const result =
+    await DB.prepare(sql)
+      .bind(...params)
+      .all();
+
+  return ok({
+    data: result.results || []
+  });
+}
 
 
+async function getSatinAlma(DB, id) {
+
+  const siparis =
+    await DB.prepare(`
+      SELECT
+        s.*,
+        f.ad AS firma_adi,
+        b.ad AS sube_adi,
+        c.ad AS cari_adi
+      FROM satin_alma_siparisleri s
+      JOIN firmalar f
+        ON f.id = s.firma_id
+      JOIN subeler b
+        ON b.id = s.sube_id
+      LEFT JOIN cariler c
+        ON c.id = s.cari_id
+      WHERE s.id = ?
+    `)
+    .bind(id)
+    .first();
+
+  if (!siparis) {
+    return fail(
+      "Satın alma kaydı bulunamadı.",
+      404
+    );
+  }
+
+  const detaylar =
+    await DB.prepare(`
+      SELECT
+        d.*,
+        u.ad AS urun_adi,
+        u.urun_kodu,
+        b.ad AS birim_adi,
+        b.sembol AS birim_sembol
+      FROM satin_alma_detaylari d
+      JOIN urunler u
+        ON u.id = d.urun_id
+      LEFT JOIN birimler b
+        ON b.id = u.birim_id
+      WHERE d.siparis_id = ?
+      ORDER BY d.id
+    `)
+    .bind(id)
+    .all();
+
+  return ok({
+    data: {
+      ...siparis,
+      detaylar:
+        detaylar.results || []
+    }
+  });
+}
+
+
+async function createSatinAlma(DB, body) {
+
+  const firmaId =
+    number(body.firma_id);
+
+  const subeId =
+    number(body.sube_id);
+
+  const cariId =
+    validId(body.cari_id)
+      ? Number(body.cari_id)
+      : null;
+
+  if (!validId(firmaId)) {
+    return fail(
+      "Firma seçimi zorunludur."
+    );
+  }
+
+  if (!validId(subeId)) {
+    return fail(
+      "Şube seçimi zorunludur."
+    );
+  }
+
+  const firma =
+    await DB.prepare(`
+      SELECT id
+      FROM firmalar
+      WHERE id = ?
+        AND aktif = 1
+    `)
+    .bind(firmaId)
+    .first();
+
+  if (!firma) {
+    return fail(
+      "Firma bulunamadı.",
+      404
+    );
+  }
+
+  const sube =
+    await DB.prepare(`
+      SELECT id
+      FROM subeler
+      WHERE id = ?
+        AND firma_id = ?
+        AND aktif = 1
+    `)
+    .bind(
+      subeId,
+      firmaId
+    )
+    .first();
+
+  if (!sube) {
+    return fail(
+      "Şube firmaya ait değil.",
+      400
+    );
+  }
+
+  if (cariId) {
+
+    const cari =
+      await DB.prepare(`
+        SELECT id
+        FROM cariler
+        WHERE id = ?
+          AND aktif = 1
+      `)
+      .bind(cariId)
+      .first();
+
+    if (!cari) {
+      return fail(
+        "Cari bulunamadı.",
+        404
+      );
+    }
+  }
+
+  const detaylar =
+    Array.isArray(body.detaylar)
+      ? body.detaylar
+      : [];
+
+  if (!detaylar.length) {
+    return fail(
+      "En az bir ürün eklemelisiniz."
+    );
+  }
+
+  const siparisNo =
+    text(body.siparis_no) ||
+    `SA-${Date.now()}`;
+
+  const durum =
+    text(body.durum) ||
+    "BEKLIYOR";
+
+  const siparisTarihi =
+    text(body.siparis_tarihi) ||
+    today();
+
+  let toplamTutar = 0;
+
+  const temizDetaylar = [];
+
+  for (const item of detaylar) {
+
+    const urunId =
+      number(item.urun_id);
+
+    const miktar =
+      number(item.miktar);
+
+    const birimFiyat =
+      number(item.birim_fiyat);
+
+    const kdvOrani =
+      number(item.kdv_orani);
+
+    if (!validId(urunId)) {
+      return fail(
+        "Geçersiz ürün."
+      );
+    }
+
+    if (miktar <= 0) {
+      return fail(
+        "Miktar 0'dan büyük olmalıdır."
+      );
+    }
+
+    if (birimFiyat < 0) {
+      return fail(
+        "Birim fiyat geçersiz."
+      );
+    }
+
+    const urun =
+      await DB.prepare(`
+        SELECT id
+        FROM urunler
+        WHERE id = ?
+          AND aktif = 1
+      `)
+      .bind(urunId)
+      .first();
+
+    if (!urun) {
+      return fail(
+        `Ürün bulunamadı: ${urunId}`,
+        404
+      );
+    }
+
+    const toplam =
+      miktar * birimFiyat;
+
+    toplamTutar += toplam;
+
+    temizDetaylar.push({
+      urunId,
+      miktar,
+      birimFiyat,
+      kdvOrani,
+      toplam
+    });
+  }
+
+  const siparisId =
+    await insertDynamic(
+      DB,
+      "satin_alma_siparisleri",
+      {
+        firma_id: firmaId,
+        sube_id: subeId,
+        cari_id: cariId,
+        siparis_no: siparisNo,
+        durum,
+        toplam_tutar: toplamTutar,
+        siparis_tarihi: siparisTarihi,
+        kullanici_id:
+          validId(body.kullanici_id)
+            ? Number(body.kullanici_id)
+            : null
+      },
+      [
+        "firma_id",
+        "sube_id",
+        "cari_id",
+        "siparis_no",
+        "durum",
+        "toplam_tutar",
+        "siparis_tarihi",
+        "kullanici_id"
+      ]
+    );
+
+  for (const item of temizDetaylar) {
+
+    await insertDynamic(
+      DB,
+      "satin_alma_detaylari",
+      {
+        siparis_id: siparisId,
+        urun_id: item.urunId,
+        miktar: item.miktar,
+        birim_fiyat: item.birimFiyat,
+        kdv_orani: item.kdvOrani,
+        toplam: item.toplam
+      },
+      [
+        "siparis_id",
+        "urun_id",
+        "miktar",
+        "birim_fiyat",
+        "kdv_orani",
+        "toplam"
+      ]
+    );
+  }
+
+  return ok({
+    id: siparisId,
+    siparis_no: siparisNo,
+    toplam_tutar: toplamTutar
+  }, 201);
+}
+
+
+async function deleteSatinAlma(DB, id) {
+
+  const mevcut =
+    await DB.prepare(`
+      SELECT id
+      FROM satin_alma_siparisleri
+      WHERE id = ?
+    `)
+    .bind(id)
+    .first();
+
+  if (!mevcut) {
+    return fail(
+      "Satın alma kaydı bulunamadı.",
+      404
+    );
+  }
+
+  await DB.prepare(`
+    DELETE FROM satin_alma_detaylari
+    WHERE siparis_id = ?
+  `)
+  .bind(id)
+  .run();
+
+  await DB.prepare(`
+    DELETE FROM satin_alma_siparisleri
+    WHERE id = ?
+  `)
+  .bind(id)
+  .run();
+
+  return ok();
+}
+/* =====================================================
+     11 - SATIN ALMA ROUTES
+     ===================================================== */
+
+  if (
+    path === "/api/satin-alma" &&
+    method === "GET"
+  ) {
+    return listSatinAlma(
+      DB,
+      request
+    );
+  }
+
+  if (
+    path === "/api/satin-alma" &&
+    method === "POST"
+  ) {
+    const body =
+      await readBody(request);
+
+    return createSatinAlma(
+      DB,
+      body
+    );
+  }
+
+  const satinAlmaMatch =
+    path.match(
+      /^\/api\/satin-alma\/(\d+)$/
+    );
+
+  if (satinAlmaMatch) {
+
+    const id =
+      Number(satinAlmaMatch[1]);
+
+    if (!validId(id)) {
+      return fail(
+        "Geçersiz satın alma ID."
+      );
+    }
+
+    if (method === "GET") {
+      return getSatinAlma(
+        DB,
+        id
+      );
+    }
+
+    if (method === "DELETE") {
+      return deleteSatinAlma(
+        DB,
+        id
+      );
+    }
+  }
 async function route(request, env) {
 
   const DB = env.DB;
