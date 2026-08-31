@@ -1,599 +1,881 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07111f">
+  <meta name="description" content="SKT Stok & Cari Takip Yönetim Sistemi">
+  <title>SKT Stok & Cari Takip</title>
 
-<title>SKT Stok & Cari Takip</title>
-
-<style>
-*{
-    box-sizing:border-box;
-}
-
-body{
-    margin:0;
-    font-family:Arial,Helvetica,sans-serif;
-    background:#f4f6f8;
-    color:#17202a;
-}
-
-/* ÜST ALAN */
-header{
-    background:#17202a;
-    color:white;
-    padding:18px 22px;
-}
-
-.logo{
-    font-size:23px;
-    font-weight:700;
-}
-
-.subtitle{
-    margin-top:5px;
-    color:#cbd2d8;
-    font-size:14px;
-}
-
-/* MENÜ */
-nav{
-    background:white;
-    padding:10px;
-    display:flex;
-    gap:8px;
-    overflow-x:auto;
-    border-bottom:1px solid #ddd;
-}
-
-nav a{
-    text-decoration:none;
-    color:#17202a;
-    background:#eef1f4;
-    padding:11px 15px;
-    border-radius:8px;
-    font-weight:600;
-    white-space:nowrap;
-}
-
-nav a:hover{
-    background:#17202a;
-    color:white;
-}
-
-/* ANA ALAN */
-main{
-    max-width:1250px;
-    margin:auto;
-    padding:20px;
-}
-
-.welcome{
-    background:white;
-    border-radius:15px;
-    padding:24px;
-    box-shadow:0 2px 10px #00000010;
-    margin-bottom:20px;
-}
-
-.welcome h1{
-    margin:0 0 8px;
-    font-size:25px;
-}
-
-.welcome p{
-    margin:0;
-    color:#68727d;
-}
-
-/* İSTATİSTİKLER */
-.stats{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
-    gap:15px;
-}
-
-.stat{
-    background:white;
-    padding:20px;
-    border-radius:15px;
-    box-shadow:0 2px 10px #00000010;
-}
-
-.stat-icon{
-    font-size:30px;
-}
-
-.stat-title{
-    color:#68727d;
-    margin-top:8px;
-}
-
-.stat-value{
-    font-size:28px;
-    font-weight:700;
-    margin-top:5px;
-}
-
-/* MODÜLLER */
-.section{
-    margin-top:25px;
-}
-
-.section-title{
-    font-size:20px;
-    font-weight:700;
-    margin-bottom:13px;
-}
-
-.modules{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
-    gap:15px;
-}
-
-.module{
-    background:white;
-    padding:20px;
-    border-radius:15px;
-    box-shadow:0 2px 10px #00000010;
-    text-decoration:none;
-    color:#17202a;
-    transition:.15s;
-}
-
-.module:hover{
-    transform:translateY(-3px);
-    box-shadow:0 6px 20px #00000018;
-}
-
-.module-icon{
-    font-size:34px;
-}
-
-.module-title{
-    font-size:18px;
-    font-weight:700;
-    margin-top:10px;
-}
-
-.module-text{
-    color:#68727d;
-    font-size:14px;
-    margin-top:5px;
-}
-
-/* ALT BİLGİ */
-.system{
-    background:white;
-    border-radius:15px;
-    padding:20px;
-    box-shadow:0 2px 10px #00000010;
-}
-
-.ok{
-    color:#16803c;
-    font-weight:700;
-    margin:8px 0;
-}
-
-footer{
-    text-align:center;
-    padding:25px;
-    color:#68727d;
-    font-size:13px;
-}
-
-/* MOBİL */
-@media(max-width:600px){
-
-    main{
-        padding:12px;
-    }
-
-    .welcome{
-        padding:18px;
-    }
-
-    .welcome h1{
-        font-size:21px;
-    }
-
-    .stat-value{
-        font-size:24px;
-    }
-}
-</style>
+  <link rel="stylesheet" href="/style.css">
 </head>
 
 <body>
 
-<header>
+<header class="topbar">
 
-<div class="logo">
-📦 SKT Stok & Cari Takip
-</div>
+  <div class="brand">
+    <div class="brand-icon">📦</div>
 
-<div class="subtitle">
-Market Yönetim ve Stok Kontrol Sistemi
-</div>
+    <div>
+      <strong>SKT STOK</strong>
+      <small>CARİ TAKİP</small>
+    </div>
+  </div>
+
+  <div class="top-actions">
+    <button class="icon-btn"
+            onclick="location.reload()"
+            title="Yenile">
+      ↻
+    </button>
+
+    <button class="user-btn">
+      <span>👤</span>
+      <span id="userName">Yönetici</span>
+    </button>
+  </div>
 
 </header>
 
 
-<nav>
+<div class="layout">
 
-<a href="index.html">🏠 Ana Sayfa</a>
+  <!-- SIDEBAR -->
 
-<a href="products.html">📦 Ürünler</a>
+  <aside class="sidebar">
 
-<a href="stock.html">📊 Stok</a>
+    <div class="menu-title">
+      ANA MENÜ
+    </div>
 
-<a href="skt.html">⏰ SKT</a>
+    <nav>
 
-<a href="cari.html">🧾 Cari</a>
+      <a class="menu-item active"
+         href="/index.html">
+        <span>🏠</span>
+        <span>Dashboard</span>
+      </a>
 
-<a href="kasa.html">💰 Kasa</a>
+      <a class="menu-item"
+         href="/products.html">
+        <span>📦</span>
+        <span>Ürünler</span>
+      </a>
 
-<a href="pos.html">🛒 POS</a>
+      <a class="menu-item"
+         href="/stock.html">
+        <span>📊</span>
+        <span>Stok</span>
+      </a>
 
-<a href="reports.html">📈 Raporlar</a>
+      <a class="menu-item"
+         href="/skt.html">
+        <span>⏰</span>
+        <span>SKT Takip</span>
+      </a>
 
-</nav>
+      <a class="menu-item"
+         href="/sayim.html">
+        <span>📝</span>
+        <span>Sayım</span>
+      </a>
+
+      <a class="menu-item"
+         href="/fire.html">
+        <span>⚠️</span>
+        <span>Fire</span>
+      </a>
+
+      <div class="menu-title">
+        TİCARİ
+      </div>
+
+      <a class="menu-item"
+         href="/firmalar.html">
+        <span>🏢</span>
+        <span>Firmalar</span>
+      </a>
+
+      <a class="menu-item"
+         href="/subeler.html">
+        <span>🏬</span>
+        <span>Şubeler</span>
+      </a>
+
+      <a class="menu-item"
+         href="/cariler.html">
+        <span>👥</span>
+        <span>Cariler</span>
+      </a>
+
+      <a class="menu-item"
+         href="/satin-alma.html">
+        <span>🛒</span>
+        <span>Satın Alma</span>
+      </a>
+
+      <a class="menu-item"
+         href="/mal-kabul.html">
+        <span>🚚</span>
+        <span>Mal Kabul</span>
+      </a>
+
+      <div class="menu-title">
+        SATIŞ
+      </div>
+
+      <a class="menu-item"
+         href="/pos.html">
+        <span>💳</span>
+        <span>POS / Satış</span>
+      </a>
+
+      <a class="menu-item"
+         href="/kasa.html">
+        <span>💰</span>
+        <span>Kasa</span>
+      </a>
+
+      <div class="menu-title">
+        RAPORLAMA
+      </div>
+
+      <a class="menu-item"
+         href="/raporlar.html">
+        <span>📈</span>
+        <span>Raporlar</span>
+      </a>
+
+      <a class="menu-item"
+         href="/kullanicilar.html">
+        <span>🔐</span>
+        <span>Kullanıcılar</span>
+      </a>
+
+    </nav>
+
+  </aside>
 
 
-<main>
+  <!-- MAIN -->
+
+  <main class="main">
+
+    <div class="page-head">
+
+      <div>
+        <h1>Dashboard</h1>
+        <p>
+          Stok, SKT, cari ve kasa durumunu
+          tek ekrandan takip edin.
+        </p>
+      </div>
+
+      <button class="btn primary"
+              onclick="loadDashboard()">
+        ↻ Güncelle
+      </button>
+
+    </div>
 
 
-<div class="welcome">
+    <!-- STAT CARDS -->
 
-<h1>
-Hoş Geldiniz 👋
-</h1>
+    <section class="stats">
 
-<p>
-Marketinizin stok, SKT, cari, kasa ve satış işlemlerini
-tek merkezden yönetin.
-</p>
+      <div class="stat-card">
+
+        <div class="stat-icon blue">
+          📦
+        </div>
+
+        <div>
+          <span>Toplam Ürün</span>
+          <strong id="urunler">0</strong>
+        </div>
+
+      </div>
+
+
+      <div class="stat-card">
+
+        <div class="stat-icon green">
+          🏢
+        </div>
+
+        <div>
+          <span>Firmalar</span>
+          <strong id="firmalar">0</strong>
+        </div>
+
+      </div>
+
+
+      <div class="stat-card">
+
+        <div class="stat-icon orange">
+          ⚠️
+        </div>
+
+        <div>
+          <span>Kritik Stok</span>
+          <strong id="kritikStok">0</strong>
+        </div>
+
+      </div>
+
+
+      <div class="stat-card">
+
+        <div class="stat-icon red">
+          ⏰
+        </div>
+
+        <div>
+          <span>Yaklaşan SKT</span>
+          <strong id="yaklasanSkt">0</strong>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- SECOND STATS -->
+
+    <section class="stats">
+
+      <div class="stat-card wide">
+
+        <div class="stat-icon purple">
+          📊
+        </div>
+
+        <div>
+          <span>Toplam Stok</span>
+          <strong id="toplamStok">0</strong>
+        </div>
+
+      </div>
+
+
+      <div class="stat-card wide">
+
+        <div class="stat-icon red">
+          🔥
+        </div>
+
+        <div>
+          <span>Bugünkü Fire</span>
+          <strong id="bugunFire">₺0,00</strong>
+        </div>
+
+      </div>
+
+
+      <div class="stat-card wide">
+
+        <div class="stat-icon green">
+          👥
+        </div>
+
+        <div>
+          <span>Cari Bakiye</span>
+          <strong id="cariBakiye">₺0,00</strong>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- QUICK ACTIONS -->
+
+    <section class="panel">
+
+      <div class="panel-head">
+
+        <div>
+          <h2>Hızlı İşlemler</h2>
+          <p>Sık kullanılan işlemlere hızlı erişim.</p>
+        </div>
+
+      </div>
+
+
+      <div class="quick-grid">
+
+        <a href="/products.html"
+           class="quick-card">
+          <span>➕</span>
+          <strong>Ürün Ekle</strong>
+          <small>Yeni ürün oluştur</small>
+        </a>
+
+        <a href="/stock.html"
+           class="quick-card">
+          <span>📥</span>
+          <strong>Stok Girişi</strong>
+          <small>Depoya ürün ekle</small>
+        </a>
+
+        <a href="/skt.html"
+           class="quick-card">
+          <span>⏰</span>
+          <strong>SKT Kontrol</strong>
+          <small>Son kullanma tarihleri</small>
+        </a>
+
+        <a href="/sayim.html"
+           class="quick-card">
+          <span>📝</span>
+          <strong>Yeni Sayım</strong>
+          <small>Stok sayımı başlat</small>
+        </a>
+
+        <a href="/fire.html"
+           class="quick-card">
+          <span>🔥</span>
+          <strong>Fire Kaydı</strong>
+          <small>Fire işlemi oluştur</small>
+        </a>
+
+        <a href="/pos.html"
+           class="quick-card">
+          <span>💳</span>
+          <strong>Satış</strong>
+          <small>Yeni satış oluştur</small>
+        </a>
+
+      </div>
+
+    </section>
+
+
+    <!-- ALERTS -->
+
+    <section class="two-column">
+
+      <div class="panel">
+
+        <div class="panel-head">
+
+          <div>
+            <h2>⚠️ Kritik Stok</h2>
+            <p>Minimum seviyenin altındaki ürünler.</p>
+          </div>
+
+          <a href="/stock.html"
+             class="text-link">
+            Tümünü Gör →
+          </a>
+
+        </div>
+
+        <div id="criticalStock"
+             class="empty">
+          Veriler yükleniyor...
+        </div>
+
+      </div>
+
+
+      <div class="panel">
+
+        <div class="panel-head">
+
+          <div>
+            <h2>⏰ Yaklaşan SKT</h2>
+            <p>Önümüzdeki 30 gün içerisindeki ürünler.</p>
+          </div>
+
+          <a href="/skt.html"
+             class="text-link">
+            Tümünü Gör →
+          </a>
+
+        </div>
+
+        <div id="sktList"
+             class="empty">
+          Veriler yükleniyor...
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- SYSTEM STATUS -->
+
+    <section class="panel">
+
+      <div class="panel-head">
+
+        <div>
+          <h2>Sistem Durumu</h2>
+          <p>API ve veritabanı bağlantısı.</p>
+        </div>
+
+        <span id="systemStatus"
+              class="status-badge">
+          Kontrol ediliyor...
+        </span>
+
+      </div>
+
+      <div class="system-grid">
+
+        <div>
+          <span>API</span>
+          <strong id="apiStatus">—</strong>
+        </div>
+
+        <div>
+          <span>D1 Veritabanı</span>
+          <strong id="dbStatus">—</strong>
+        </div>
+
+        <div>
+          <span>Son Güncelleme</span>
+          <strong id="lastUpdate">—</strong>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <footer class="footer">
+      <span>
+        SKT Stok & Cari Takip
+      </span>
+
+      <span>
+        V1.0
+      </span>
+    </footer>
+
+  </main>
 
 </div>
-
-
-<!-- İSTATİSTİKLER -->
-
-<div class="stats">
-
-
-<div class="stat">
-
-<div class="stat-icon">🏢</div>
-
-<div class="stat-title">
-Firma
-</div>
-
-<div class="stat-value" id="companies">
-0
-</div>
-
-</div>
-
-
-<div class="stat">
-
-<div class="stat-icon">🏪</div>
-
-<div class="stat-title">
-Şube
-</div>
-
-<div class="stat-value" id="branches">
-0
-</div>
-
-</div>
-
-
-<div class="stat">
-
-<div class="stat-icon">📦</div>
-
-<div class="stat-title">
-Aktif Ürün
-</div>
-
-<div class="stat-value" id="products">
-0
-</div>
-
-</div>
-
-
-<div class="stat">
-
-<div class="stat-icon">⏰</div>
-
-<div class="stat-title">
-Kritik SKT
-</div>
-
-<div class="stat-value" id="criticalSkt">
-0
-</div>
-
-</div>
-
-
-<div class="stat">
-
-<div class="stat-icon">📊</div>
-
-<div class="stat-title">
-Kritik Stok
-</div>
-
-<div class="stat-value" id="criticalStock">
-0
-</div>
-
-</div>
-
-
-<div class="stat">
-
-<div class="stat-icon">💰</div>
-
-<div class="stat-title">
-Kasa
-</div>
-
-<div class="stat-value" id="cash">
-0,00 ₺
-</div>
-
-</div>
-
-
-</div>
-
-
-<!-- MODÜLLER -->
-
-<div class="section">
-
-<div class="section-title">
-⚡ Sistem Modülleri
-</div>
-
-
-<div class="modules">
-
-
-<a class="module" href="products.html">
-
-<div class="module-icon">
-📦
-</div>
-
-<div class="module-title">
-Ürün Yönetimi
-</div>
-
-<div class="module-text">
-Ürün kartları, fiyatlar, kategori ve barkod yönetimi.
-</div>
-
-</a>
-
-
-<a class="module" href="stock.html">
-
-<div class="module-icon">
-📊
-</div>
-
-<div class="module-title">
-Stok Yönetimi
-</div>
-
-<div class="module-text">
-Depo, stok giriş-çıkış ve stok hareketleri.
-</div>
-
-</a>
-
-
-<a class="module" href="skt.html">
-
-<div class="module-icon">
-⏰
-</div>
-
-<div class="module-title">
-SKT Takibi
-</div>
-
-<div class="module-text">
-Parti, lot ve son kullanma tarihi takibi.
-</div>
-
-</a>
-
-
-<a class="module" href="cari.html">
-
-<div class="module-icon">
-🧾
-</div>
-
-<div class="module-title">
-Cari Hesaplar
-</div>
-
-<div class="module-text">
-Müşteri, tedarikçi ve cari bakiye yönetimi.
-</div>
-
-</a>
-
-
-<a class="module" href="kasa.html">
-
-<div class="module-icon">
-💰
-</div>
-
-<div class="module-title">
-Kasa & Nakit
-</div>
-
-<div class="module-text">
-Kasa açılış, gelir-gider, virman ve gün sonu.
-</div>
-
-</a>
-
-
-<a class="module" href="pos.html">
-
-<div class="module-icon">
-🛒
-</div>
-
-<div class="module-title">
-POS / Satış
-</div>
-
-<div class="module-text">
-Barkodlu satış, ödeme ve satış işlemleri.
-</div>
-
-</a>
-
-
-<a class="module" href="reports.html">
-
-<div class="module-icon">
-📈
-</div>
-
-<div class="module-title">
-Raporlama
-</div>
-
-<div class="module-text">
-Stok, satış, maliyet ve kârlılık raporları.
-</div>
-
-</a>
-
-
-<a class="module" href="settings.html">
-
-<div class="module-icon">
-⚙️
-</div>
-
-<div class="module-title">
-Ayarlar
-</div>
-
-<div class="module-text">
-Firma, şube, kullanıcı ve sistem ayarları.
-</div>
-
-</a>
-
-
-</div>
-
-</div>
-
-
-<!-- SİSTEM DURUMU -->
-
-<div class="section">
-
-<div class="section-title">
-🟢 Sistem Durumu
-</div>
-
-<div class="system">
-
-<div class="ok">
-✓ SKT Stok & Cari Takip aktif
-</div>
-
-<div class="ok">
-✓ Cloudflare Worker bağlantısı
-</div>
-
-<div class="ok">
-✓ D1 veritabanı bağlantısı
-</div>
-
-<div class="ok">
-✓ API sistemi
-</div>
-
-</div>
-
-</div>
-
-
-</main>
-
-
-<footer>
-
-SKT Stok & Cari Takip © 2026
-
-</footer>
 
 
 <script>
 
-async function dashboard(){
+const API = "/api";
 
-    try{
 
-        const response =
-            await fetch("/api/dashboard");
+async function api(
+  endpoint,
+  options = {}
+) {
 
-        if(!response.ok) return;
+  const response =
+    await fetch(
+      API + endpoint,
+      {
+        headers: {
+          "Content-Type":
+            "application/json",
+          ...(options.headers || {})
+        },
+        ...options
+      }
+    );
 
-        const data =
-            await response.json();
+  const data =
+    await response.json()
+      .catch(() => ({}));
 
-        document.getElementById("companies")
-            .textContent =
-            data.companies || 0;
+  if (!response.ok) {
 
-        document.getElementById("branches")
-            .textContent =
-            data.branches || 0;
+    throw new Error(
+      data.error ||
+      `HTTP ${response.status}`
+    );
 
-        document.getElementById("products")
-            .textContent =
-            data.products || 0;
+  }
 
-        document.getElementById("cash")
-            .textContent =
-            Number(data.balance || 0)
-            .toLocaleString("tr-TR",{
-                minimumFractionDigits:2,
-                maximumFractionDigits:2
-            }) + " ₺";
+  return data;
+}
 
-    }catch(error){
 
-        console.log(error);
+function money(value) {
 
+  return new Intl.NumberFormat(
+    "tr-TR",
+    {
+      style: "currency",
+      currency: "TRY"
     }
+  ).format(
+    Number(value || 0)
+  );
 
 }
 
-dashboard();
+
+function number(value) {
+
+  return new Intl.NumberFormat(
+    "tr-TR"
+  ).format(
+    Number(value || 0)
+  );
+
+}
+
+
+function setText(
+  id,
+  value
+) {
+
+  const element =
+    document.getElementById(id);
+
+  if (element) {
+    element.textContent = value;
+  }
+
+}
+
+
+async function loadDashboard() {
+
+  try {
+
+    const result =
+      await api(
+        "/dashboard"
+      );
+
+    const data =
+      result.data || result;
+
+
+    setText(
+      "urunler",
+      number(data.urunler)
+    );
+
+    setText(
+      "firmalar",
+      number(data.firmalar)
+    );
+
+    setText(
+      "kritikStok",
+      number(data.kritik_stok)
+    );
+
+    setText(
+      "yaklasanSkt",
+      number(data.yaklaşan_skt)
+    );
+
+    setText(
+      "toplamStok",
+      number(data.toplam_stok)
+    );
+
+    setText(
+      "bugunFire",
+      money(data.bugun_fire)
+    );
+
+    setText(
+      "cariBakiye",
+      money(data.cari_bakiye)
+    );
+
+    setText(
+      "lastUpdate",
+      new Date()
+        .toLocaleString("tr-TR")
+    );
+
+    await loadAlerts();
+
+  } catch (error) {
+
+    console.error(error);
+
+    setText(
+      "systemStatus",
+      "API Hatası"
+    );
+
+    document
+      .getElementById("systemStatus")
+      ?.classList.add("danger");
+
+  }
+
+}
+
+
+async function loadHealth() {
+
+  try {
+
+    const result =
+      await api(
+        "/health"
+      );
+
+    setText(
+      "apiStatus",
+      "Çalışıyor"
+    );
+
+    setText(
+      "dbStatus",
+      result.database || "D1"
+    );
+
+    const status =
+      document.getElementById(
+        "systemStatus"
+      );
+
+    if (status) {
+
+      status.textContent =
+        "● Sistem Aktif";
+
+      status.classList.add(
+        "success"
+      );
+
+    }
+
+  } catch (error) {
+
+    setText(
+      "apiStatus",
+      "Bağlantı Yok"
+    );
+
+    setText(
+      "dbStatus",
+      "Kontrol edilemedi"
+    );
+
+    const status =
+      document.getElementById(
+        "systemStatus"
+      );
+
+    if (status) {
+
+      status.textContent =
+        "● Sistem Hatası";
+
+      status.classList.add(
+        "danger"
+      );
+
+    }
+
+  }
+
+}
+
+
+async function loadAlerts() {
+
+  const critical =
+    document.getElementById(
+      "criticalStock"
+    );
+
+  const skt =
+    document.getElementById(
+      "sktList"
+    );
+
+
+  try {
+
+    const stockResult =
+      await api(
+        "/stok"
+      );
+
+    const stocks =
+      stockResult.data ||
+      stockResult ||
+      [];
+
+
+    const criticalItems =
+      stocks
+        .filter(item =>
+          Number(item.minimum_stok || 0) > 0 &&
+          Number(item.miktar || 0)
+            <= Number(item.minimum_stok || 0)
+        )
+        .slice(0, 8);
+
+
+    if (!criticalItems.length) {
+
+      critical.innerHTML =
+        `<div class="empty">
+          ✅ Kritik stok bulunmuyor.
+        </div>`;
+
+    } else {
+
+      critical.innerHTML =
+        criticalItems
+          .map(item => `
+
+            <div class="alert-row">
+
+              <div>
+                <strong>
+                  ${escapeHtml(
+                    item.urun_adi || "Ürün"
+                  )}
+                </strong>
+
+                <small>
+                  ${escapeHtml(
+                    item.depo_adi || ""
+                  )}
+                </small>
+              </div>
+
+              <b class="danger-text">
+                ${number(item.miktar)}
+              </b>
+
+            </div>
+
+          `)
+          .join("");
+
+    }
+
+
+  } catch (error) {
+
+    critical.innerHTML =
+      `<div class="empty">
+        Veri alınamadı.
+      </div>`;
+
+  }
+
+
+  try {
+
+    const sktResult =
+      await api(
+        "/skt?days=30"
+      );
+
+    const items =
+      sktResult.data ||
+      sktResult ||
+      [];
+
+
+    const list =
+      items.slice(0, 8);
+
+
+    if (!list.length) {
+
+      skt.innerHTML =
+        `<div class="empty">
+          ✅ Yaklaşan SKT bulunmuyor.
+        </div>`;
+
+    } else {
+
+      skt.innerHTML =
+        list
+          .map(item => `
+
+            <div class="alert-row">
+
+              <div>
+
+                <strong>
+                  ${escapeHtml(
+                    item.urun_adi || "Ürün"
+                  )}
+                </strong>
+
+                <small>
+                  SKT:
+                  ${escapeHtml(
+                    item.son_kullanma_tarihi || "-"
+                  )}
+                </small>
+
+              </div>
+
+              <b class="${
+                Number(item.kalan_gun) < 0
+                  ? "danger-text"
+                  : "warning-text"
+              }">
+
+                ${
+                  Number(item.kalan_gun) < 0
+                    ? "GEÇMİŞ"
+                    : `${item.kalan_gun} gün`
+                }
+
+              </b>
+
+            </div>
+
+          `)
+          .join("");
+
+    }
+
+  } catch (error) {
+
+    skt.innerHTML =
+      `<div class="empty">
+        Veri alınamadı.
+      </div>`;
+
+  }
+
+}
+
+
+function escapeHtml(value) {
+
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+
+}
+
+
+document.addEventListener(
+  "DOMContentLoaded",
+  () => {
+
+    loadDashboard();
+
+    loadHealth();
+
+  }
+);
 
 </script>
 
