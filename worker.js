@@ -1,884 +1,1379 @@
-const json = (data, status = 200) =>
-  new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      "content-type": "application/json; charset=utf-8",
-      "access-control-allow-origin": "*"
-    }
-  });
-
-const cors = {
+const CORS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type"
+  "Access-Control-Allow-Methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type,Authorization",
+  "Content-Type": "application/json; charset=UTF-8"
 };
 
+function response(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: CORS
+  });
+}
+
+function ok(data = {}, status = 200) {
+  return response({ ok: true, ...data }, status);
+}
+
+function fail(message, status = 400, extra = {}) {
+  return response({
+    ok: false,
+    error: message,
+    ...extra
+  }, status);
+}
+
+async function readBody(request) {
+  try {
+    return await request.json();
+  } catch {
+    return {};
+  }
+}
+
+function number(value, fallback = 0) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function text(value, fallback = "") {
+  return value === undefined || value === null
+    ? fallback
+    : String(value).trim();
+}
+
+function today() {
+  return new Date().toISOString();
+}
+
+function validId(value) {
+  const n = Number(value);
+  return Number.isInteger(n) && n > 0;
+}
+
+function sanitizeColumns(body, allowed) {
+  return allowed.filter(column =>
+    Object.prototype.hasOwnProperty.call(body, column)
+  );
+}
+
+async function insertDynamic(DB, table, body, allowed) {
+  const columns = sanitizeColumns(body, allowed);
+
+  if (!columns.length) {
+    throw new Error("Kaydedilecek veri bulunamadı.");
+  }
+
+  const placeholders = columns.map(() => "?").join(",");
+  const values = columns.map(column => body[column]);
+
+  const sql = `
+    INSERT INTO ${table}
+    (${columns.join(",")})
+    VALUES (${placeholders})
+  `;
+
+  const result = await DB.prepare(sql).bind(...values).run();
+
+  return result.meta?.last_row_id || null;
+}
+
+async function updateDynamic(DB, table, id, body, allowed) {
+  const columns = sanitizeColumns(body, allowed);
+
+  if (!columns.length) {
+    throw new Error("Güncellenecek veri bulunamadı.");
+  }
+
+  const sets = columns.map(column => `${column} = ?`).join(",");
+
+  const values = columns.map(column => body[column]);
+
+  await DB.prepare(`
+    UPDATE ${table}
+    SET ${sets}
+    WHERE id = ?
+  `).bind(...values, id).run();
+}
+
+async function softDelete(DB, table, id) {
+  await DB.prepare(`
+    UPDATE ${table}
+    SET aktif = 0
+    WHERE id = ?
+  `).bind(id).run();
+}
+
+const TABLES = {
+
+  firmalar: {
+    table: "firmalar",
+    allowed: [
+      "ad",
+      "vergi_no",
+      "telefon",
+      "email",
+      "adres",
+      "aktif"
+    ]
+  },
+
+  subeler: {
+    table: "subeler",
+    allowed: [
+      "firma_id",
+      "ad",
+      "kod",
+      "telefon",
+      "adres",
+      "aktif"
+    ]
+  },
+
+  kategoriler: {
+    table: "kategoriler",
+    allowed: [
+      "firma_id",
+      "ad",
+      "ust_kategori_id",
+      "aktif"
+    ]
+  },
+
+  birimler: {
+    table: "birimler",
+    allowed: [
+      "ad",
+      "sembol"
+    ]
+  },
+
+  urunler: {
+    table: "urunler",
+    allowed: [
+      "firma_id",
+      "kategori_id",
+      "birim_id",
+      "urun_kodu",
+      "ad",
+      "marka",
+      "alis_fiyati",
+      "satis_fiyati",
+      "minimum_stok",
+      "maksimum_stok",
+      "kdv_orani",
+      "tartili_urun",
+      "aktif"
+    ]
+  },
+
+  barkodlar: {
+    table: "barkodlar",
+    allowed: [
+      "urun_id",
+      "barkod",
+      "barkod_tipi",
+      "birincil"
+    ]
+  },
+
+  depolar: {
+    table: "depolar",
+    allowed: [
+      "sube_id",
+      "ad",
+      "kod",
+      "aktif"
+    ]
+  },
+
+  cariler: {
+    table: "cariler",
+    allowed: [
+      "firma_id",
+      "cari_tipi",
+      "ad",
+      "vergi_no",
+      "telefon",
+      "email",
+      "adres",
+      "bakiye",
+      "aktif"
+    ]
+  },
+
+  kasalar: {
+    table: "kasalar",
+    allowed: [
+      "sube_id",
+      "kasa_kodu",
+      "kasa_adi",
+      "aktif"
+    ]
+  },
+
+  odeme_yontemleri: {
+    table: "odeme_yontemleri",
+    allowed: [
+      "ad",
+      "aktif"
+    ]
+  },
+
+  fire_nedenleri: {
+    table: "fire_nedenleri",
+    allowed: [
+      "ad",
+      "aktif"
+    ]
+  },
+
+  roller: {
+    table: "roller",
+    allowed: [
+      "ad",
+      "aciklama"
+    ]
+  },
+
+  yetkiler: {
+    table: "yetkiler",
+    allowed: [
+      "kod",
+      "ad",
+      "aciklama"
+    ]
+  }
+};
+
+
+async function dashboard(DB) {
+
+  const [
+    firmalar,
+    subeler,
+    urunler,
+    stok,
+    kritik,
+    skt,
+    fire,
+    cariler,
+    kasa
+  ] = await Promise.all([
+
+    DB.prepare(`
+      SELECT COUNT(*) AS sayi
+      FROM firmalar
+      WHERE aktif = 1
+    `).first(),
+
+    DB.prepare(`
+      SELECT COUNT(*) AS sayi
+      FROM subeler
+      WHERE aktif = 1
+    `).first(),
+
+    DB.prepare(`
+      SELECT COUNT(*) AS sayi
+      FROM urunler
+      WHERE aktif = 1
+    `).first(),
+
+    DB.prepare(`
+      SELECT COALESCE(SUM(miktar),0) AS miktar
+      FROM mevcut_stoklar
+    `).first(),
+
+    DB.prepare(`
+      SELECT COUNT(*) AS sayi
+      FROM mevcut_stoklar s
+      JOIN urunler u ON u.id = s.urun_id
+      WHERE u.aktif = 1
+        AND u.minimum_stok > 0
+        AND s.miktar <= u.minimum_stok
+    `).first(),
+
+    DB.prepare(`
+      SELECT COUNT(*) AS sayi
+      FROM partiler
+      WHERE son_kullanma_tarihi IS NOT NULL
+        AND date(son_kullanma_tarihi)
+            BETWEEN date('now') AND date('now','+30 day')
+        AND miktar > 0
+    `).first(),
+
+    DB.prepare(`
+      SELECT COALESCE(
+        SUM(miktar * birim_maliyet),
+        0
+      ) AS tutar
+      FROM fireler
+      WHERE date(olusturma_tarihi) = date('now')
+    `).first(),
+
+    DB.prepare(`
+      SELECT COALESCE(SUM(bakiye),0) AS bakiye
+      FROM cariler
+      WHERE aktif = 1
+    `).first(),
+
+    DB.prepare(`
+      SELECT COALESCE(SUM(tutar),0) AS tutar
+      FROM kasa_hareketleri
+    `).first()
+
+  ]);
+
+  return ok({
+    data: {
+      firmalar: firmalar?.sayi || 0,
+      subeler: subeler?.sayi || 0,
+      urunler: urunler?.sayi || 0,
+      toplam_stok: stok?.miktar || 0,
+      kritik_stok: kritik?.sayi || 0,
+      yaklaşan_skt: skt?.sayi || 0,
+      bugun_fire: fire?.tutar || 0,
+      cari_bakiye: cariler?.bakiye || 0,
+      kasa_hareketleri: kasa?.tutar || 0
+    }
+  });
+}
+
+
+async function listTable(DB, config, request) {
+
+  const url = new URL(request.url);
+
+  const search = text(url.searchParams.get("search"));
+
+  let sql = `SELECT * FROM ${config.table}`;
+
+  const params = [];
+
+  if (config.table !== "birimler" &&
+      config.table !== "odeme_yontemleri" &&
+      config.table !== "fire_nedenleri" &&
+      config.table !== "roller" &&
+      config.table !== "yetkiler") {
+
+    sql += ` WHERE aktif = 1`;
+
+    if (search) {
+      sql += ` AND ad LIKE ?`;
+      params.push(`%${search}%`);
+    }
+
+  } else if (search && config.allowed.includes("ad")) {
+
+    sql += ` WHERE ad LIKE ?`;
+    params.push(`%${search}%`);
+  }
+
+  sql += ` ORDER BY id DESC`;
+
+  const result = await DB.prepare(sql).bind(...params).all();
+
+  return ok({
+    data: result.results || []
+  });
+}
+
+
+async function getTable(DB, config, id) {
+
+  const row = await DB.prepare(`
+    SELECT *
+    FROM ${config.table}
+    WHERE id = ?
+  `).bind(id).first();
+
+  if (!row) {
+    return fail("Kayıt bulunamadı.", 404);
+  }
+
+  return ok({
+    data: row
+  });
+}
+
+
+async function createTable(DB, config, body) {
+
+  const id = await insertDynamic(
+    DB,
+    config.table,
+    body,
+    config.allowed
+  );
+
+  return ok({
+    id
+  }, 201);
+}
+
+
+async function updateTable(DB, config, id, body) {
+
+  await updateDynamic(
+    DB,
+    config.table,
+    id,
+    body,
+    config.allowed
+  );
+
+  return ok();
+}
+
+
+async function deleteTable(DB, config, id) {
+
+  if (config.allowed.includes("aktif")) {
+    await softDelete(
+      DB,
+      config.table,
+      id
+    );
+  } else {
+
+    await DB.prepare(`
+      DELETE FROM ${config.table}
+      WHERE id = ?
+    `).bind(id).run();
+
+  }
+
+  return ok();
+}
+
+
+async function products(DB, request) {
+
+  const url = new URL(request.url);
+
+  const search = text(
+    url.searchParams.get("search")
+  );
+
+  let sql = `
+    SELECT
+      u.*,
+      f.ad AS firma_adi,
+      k.ad AS kategori_adi,
+      b.ad AS birim_adi,
+      b.sembol AS birim_sembol,
+      COALESCE(
+        (
+          SELECT SUM(ms.miktar)
+          FROM mevcut_stoklar ms
+          WHERE ms.urun_id = u.id
+        ),0
+      ) AS toplam_stok,
+      (
+        SELECT GROUP_CONCAT(br.barkod, ',')
+        FROM barkodlar br
+        WHERE br.urun_id = u.id
+      ) AS barkodlar
+    FROM urunler u
+    JOIN firmalar f
+      ON f.id = u.firma_id
+    LEFT JOIN kategoriler k
+      ON k.id = u.kategori_id
+    JOIN birimler b
+      ON b.id = u.birim_id
+    WHERE u.aktif = 1
+  `;
+
+  const params = [];
+
+  if (search) {
+
+    sql += `
+      AND (
+        u.ad LIKE ?
+        OR u.urun_kodu LIKE ?
+        OR EXISTS (
+          SELECT 1
+          FROM barkodlar br
+          WHERE br.urun_id = u.id
+            AND br.barkod LIKE ?
+        )
+      )
+    `;
+
+    params.push(
+      `%${search}%`,
+      `%${search}%`,
+      `%${search}%`
+    );
+  }
+
+  sql += ` ORDER BY u.id DESC`;
+
+  const result =
+    await DB.prepare(sql).bind(...params).all();
+
+  return ok({
+    data: result.results || []
+  });
+}
+
+
+async function barcode(DB, request) {
+
+  const url = new URL(request.url);
+
+  const value =
+    text(url.searchParams.get("barkod"));
+
+  if (!value) {
+    return fail("Barkod belirtilmedi.");
+  }
+
+  const row = await DB.prepare(`
+    SELECT
+      u.*,
+      br.barkod,
+      br.barkod_tipi,
+      br.birincil
+    FROM barkodlar br
+    JOIN urunler u
+      ON u.id = br.urun_id
+    WHERE br.barkod = ?
+      AND u.aktif = 1
+    LIMIT 1
+  `).bind(value).first();
+
+  if (!row) {
+    return fail(
+      "Barkod kayıtlı değil.",
+      404
+    );
+  }
+
+  return ok({
+    data: row
+  });
+}
+
+
+async function stock(DB, request) {
+
+  const url = new URL(request.url);
+
+  const depoId =
+    url.searchParams.get("depo_id");
+
+  let sql = `
+    SELECT
+      ms.urun_id,
+      ms.depo_id,
+      ms.miktar,
+      u.urun_kodu,
+      u.ad AS urun_adi,
+      u.minimum_stok,
+      u.maksimum_stok,
+      d.ad AS depo_adi,
+      d.kod AS depo_kodu
+    FROM mevcut_stoklar ms
+    JOIN urunler u
+      ON u.id = ms.urun_id
+    JOIN depolar d
+      ON d.id = ms.depo_id
+    WHERE u.aktif = 1
+  `;
+
+  const params = [];
+
+  if (validId(depoId)) {
+    sql += ` AND ms.depo_id = ?`;
+    params.push(Number(depoId));
+  }
+
+  sql += ` ORDER BY u.ad`;
+
+  const result =
+    await DB.prepare(sql).bind(...params).all();
+
+  return ok({
+    data: result.results || []
+  });
+}
+
+
+async function skt(DB, request) {
+
+  const url = new URL(request.url);
+
+  const days = Math.max(
+    0,
+    number(
+      url.searchParams.get("days"),
+      30
+    )
+  );
+
+  const result = await DB.prepare(`
+    SELECT
+      p.*,
+      u.urun_kodu,
+      u.ad AS urun_adi,
+      d.ad AS depo_adi,
+      d.kod AS depo_kodu,
+      CASE
+        WHEN date(p.son_kullanma_tarihi) < date('now')
+          THEN 'GECMIS'
+        WHEN date(p.son_kullanma_tarihi) <= date('now','+' || ? || ' day')
+          THEN 'YAKLASIYOR'
+        ELSE 'NORMAL'
+      END AS durum,
+      CAST(
+        julianday(date(p.son_kullanma_tarihi))
+        - julianday(date('now'))
+        AS INTEGER
+      ) AS kalan_gun
+    FROM partiler p
+    JOIN urunler u
+      ON u.id = p.urun_id
+    JOIN depolar d
+      ON d.id = p.depo_id
+    WHERE p.son_kullanma_tarihi IS NOT NULL
+      AND p.miktar > 0
+      AND date(p.son_kullanma_tarihi)
+          <= date('now','+' || ? || ' day')
+    ORDER BY date(p.son_kullanma_tarihi)
+  `).bind(days, days).all();
+
+  return ok({
+    data: result.results || []
+  });
+}
+
+
+async function cariHareketleri(DB, request) {
+
+  const url = new URL(request.url);
+
+  const cariId =
+    number(url.searchParams.get("cari_id"));
+
+  if (!validId(cariId)) {
+    return fail("Geçerli cari_id gerekli.");
+  }
+
+  const result = await DB.prepare(`
+    SELECT *
+    FROM cari_hareketleri
+    WHERE cari_id = ?
+    ORDER BY id DESC
+  `).bind(cariId).all();
+
+  return ok({
+    data: result.results || []
+  });
+}
+
+
+async function kasaHareketleri(DB, request) {
+
+  const url = new URL(request.url);
+
+  const kasaId =
+    number(url.searchParams.get("kasa_id"));
+
+  if (!validId(kasaId)) {
+    return fail("Geçerli kasa_id gerekli.");
+  }
+
+  const result = await DB.prepare(`
+    SELECT *
+    FROM kasa_hareketleri
+    WHERE kasa_id = ?
+    ORDER BY id DESC
+  `).bind(kasaId).all();
+
+  return ok({
+    data: result.results || []
+  });
+}
+
+
+async function stockMovement(DB, body) {
+
+  const urunId = number(body.urun_id);
+  const depoId = number(body.depo_id);
+  const miktar = number(body.miktar);
+  const tip = text(body.hareket_tipi);
+
+  if (
+    !validId(urunId) ||
+    !validId(depoId) ||
+    !miktar ||
+    !tip
+  ) {
+    return fail(
+      "urun_id, depo_id, miktar ve hareket_tipi zorunludur."
+    );
+  }
+
+  const mevcut = await DB.prepare(`
+    SELECT miktar
+    FROM mevcut_stoklar
+    WHERE urun_id = ?
+      AND depo_id = ?
+  `).bind(
+    urunId,
+    depoId
+  ).first();
+
+  const eski =
+    number(mevcut?.miktar);
+
+  const cikisTipleri = [
+    "CIKIS",
+    "SATIS",
+    "FIRE",
+    "TRANSFER_CIKIS"
+  ];
+
+  const yeni =
+    cikisTipleri.includes(tip)
+      ? eski - miktar
+      : eski + miktar;
+
+  if (yeni < 0) {
+    return fail(
+      "Yetersiz stok.",
+      409,
+      {
+        mevcut: eski,
+        istenen: miktar
+      }
+    );
+  }
+
+  await DB.prepare(`
+    INSERT INTO stok_hareketleri (
+      urun_id,
+      parti_id,
+      depo_id,
+      hareket_tipi,
+      miktar,
+      birim_maliyet,
+      referans_tipi,
+      referans_id,
+      kullanici_id,
+      aciklama
+    )
+    VALUES (?,?,?,?,?,?,?,?,?,?)
+  `).bind(
+    urunId,
+    body.parti_id || null,
+    depoId,
+    tip,
+    miktar,
+    number(body.birim_maliyet),
+    body.referans_tipi || null,
+    body.referans_id || null,
+    body.kullanici_id || null,
+    body.aciklama || null
+  ).run();
+
+  await DB.prepare(`
+    INSERT INTO mevcut_stoklar (
+      urun_id,
+      depo_id,
+      miktar
+    )
+    VALUES (?,?,?)
+    ON CONFLICT(urun_id,depo_id)
+    DO UPDATE SET
+      miktar = excluded.miktar
+  `).bind(
+    urunId,
+    depoId,
+    yeni
+  ).run();
+
+  return ok({
+    eski_stok: eski,
+    yeni_stok: yeni
+  }, 201);
+}
+
+
+async function createFire(DB, body) {
+
+  const miktar =
+    number(body.miktar);
+
+  if (
+    !validId(body.urun_id) ||
+    !validId(body.depo_id) ||
+    miktar <= 0
+  ) {
+    return fail(
+      "Ürün, depo ve pozitif miktar zorunludur."
+    );
+  }
+
+  const result =
+    await stockMovement(
+      DB,
+      {
+        urun_id: body.urun_id,
+        depo_id: body.depo_id,
+        parti_id: body.parti_id,
+        miktar,
+        hareket_tipi: "FIRE",
+        birim_maliyet:
+          number(body.birim_maliyet),
+        referans_tipi: "FIRE",
+        aciklama:
+          body.aciklama || body.neden || null,
+        kullanici_id:
+          body.kullanici_id || null
+      }
+    );
+
+  if (result.status !== 201) {
+    return result;
+  }
+
+  const firma =
+    await DB.prepare(`
+      SELECT firma_id
+      FROM urunler
+      WHERE id = ?
+    `).bind(body.urun_id).first();
+
+  const depo =
+    await DB.prepare(`
+      SELECT sube_id
+      FROM depolar
+      WHERE id = ?
+    `).bind(body.depo_id).first();
+
+  const id =
+    await insertDynamic(
+      DB,
+      "fireler",
+      {
+        firma_id: firma?.firma_id,
+        sube_id: depo?.sube_id,
+        depo_id: body.depo_id,
+        urun_id: body.urun_id,
+        parti_id: body.parti_id || null,
+        miktar,
+        birim_maliyet:
+          number(body.birim_maliyet),
+        neden_id:
+          body.neden_id || null,
+        neden:
+          body.neden || null,
+        aciklama:
+          body.aciklama || null,
+        kullanici_id:
+          body.kullanici_id || null
+      },
+      [
+        "firma_id",
+        "sube_id",
+        "depo_id",
+        "urun_id",
+        "parti_id",
+        "miktar",
+        "birim_maliyet",
+        "neden_id",
+        "neden",
+        "aciklama",
+        "kullanici_id"
+      ]
+    );
+
+  return ok({
+    id
+  }, 201);
+}
+
+
+async function createSayim(DB, body) {
+
+  const firmaId =
+    number(body.firma_id);
+
+  const subeId =
+    number(body.sube_id);
+
+  const depoId =
+    number(body.depo_id);
+
+  if (
+    !validId(firmaId) ||
+    !validId(subeId) ||
+    !validId(depoId)
+  ) {
+    return fail(
+      "Firma, şube ve depo zorunludur."
+    );
+  }
+
+  const sayimNo =
+    text(body.sayim_no) ||
+    `SAY-${Date.now()}`;
+
+  const id =
+    await insertDynamic(
+      DB,
+      "sayimlar",
+      {
+        firma_id: firmaId,
+        sube_id: subeId,
+        depo_id: depoId,
+        sayim_no: sayimNo,
+        durum: "ACIK",
+        kullanici_id:
+          body.kullanici_id || null,
+        aciklama:
+          body.aciklama || null
+      },
+      [
+        "firma_id",
+        "sube_id",
+        "depo_id",
+        "sayim_no",
+        "durum",
+        "kullanici_id",
+        "aciklama"
+      ]
+    );
+
+  return ok({
+    id,
+    sayim_no: sayimNo
+  }, 201);
+}
+
+
+async function listSayim(DB, request) {
+
+  const result =
+    await DB.prepare(`
+      SELECT
+        s.*,
+        f.ad AS firma_adi,
+        b.ad AS sube_adi,
+        d.ad AS depo_adi
+      FROM sayimlar s
+      JOIN firmalar f ON f.id = s.firma_id
+      JOIN subeler b ON b.id = s.sube_id
+      JOIN depolar d ON d.id = s.depo_id
+      ORDER BY s.id DESC
+    `).all();
+
+  return ok({
+    data: result.results || []
+  });
+}
+
+
+async function listFire(DB, request) {
+
+  const result =
+    await DB.prepare(`
+      SELECT
+        f.*,
+        u.ad AS urun_adi,
+        u.urun_kodu,
+        d.ad AS depo_adi,
+        COALESCE(
+          f.miktar * f.birim_maliyet,
+          0
+        ) AS toplam_tutar
+      FROM fireler f
+      JOIN urunler u ON u.id = f.urun_id
+      JOIN depolar d ON d.id = f.depo_id
+      ORDER BY f.id DESC
+    `).all();
+
+  return ok({
+    data: result.results || []
+  });
+}
+
+
+async function reports(DB) {
+
+  const [
+    stokDegeri,
+    fire,
+    skt,
+    cari,
+    satis
+  ] = await Promise.all([
+
+    DB.prepare(`
+      SELECT COALESCE(
+        SUM(ms.miktar * u.alis_fiyati),
+        0
+      ) AS toplam
+      FROM mevcut_stoklar ms
+      JOIN urunler u
+        ON u.id = ms.urun_id
+    `).first(),
+
+    DB.prepare(`
+      SELECT
+        COALESCE(SUM(miktar),0) miktar,
+        COALESCE(SUM(miktar * birim_maliyet),0) tutar
+      FROM fireler
+    `).first(),
+
+    DB.prepare(`
+      SELECT
+        COUNT(*) AS adet,
+        COALESCE(SUM(miktar),0) AS miktar
+      FROM partiler
+      WHERE son_kullanma_tarihi IS NOT NULL
+        AND date(son_kullanma_tarihi)
+          <= date('now','+30 day')
+        AND miktar > 0
+    `).first(),
+
+    DB.prepare(`
+      SELECT COALESCE(SUM(bakiye),0) bakiye
+      FROM cariler
+      WHERE aktif = 1
+    `).first(),
+
+    DB.prepare(`
+      SELECT
+        COUNT(*) adet,
+        COALESCE(SUM(genel_toplam),0) toplam
+      FROM satislar
+      WHERE date(satis_tarihi) = date('now')
+    `).first()
+
+  ]);
+
+  return ok({
+    data: {
+      stok_degeri:
+        stokDegeri?.toplam || 0,
+      fire_miktari:
+        fire?.miktar || 0,
+      fire_tutari:
+        fire?.tutar || 0,
+      yaklasan_skt:
+        skt?.adet || 0,
+      yaklasan_skt_miktari:
+        skt?.miktar || 0,
+      cari_bakiye:
+        cari?.bakiye || 0,
+      bugun_satis_adet:
+        satis?.adet || 0,
+      bugun_satis:
+        satis?.toplam || 0
+    }
+  });
+}
+
+
+async function route(request, env) {
+
+  const DB = env.DB;
+
+  if (!DB) {
+    return fail(
+      "D1 DB binding bulunamadı.",
+      500
+    );
+  }
+
+  const url =
+    new URL(request.url);
+
+  const path =
+    url.pathname.replace(/\/+$/, "") || "/";
+
+  const method =
+    request.method.toUpperCase();
+
+  if (
+    path === "/api/health" &&
+    method === "GET"
+  ) {
+    return ok({
+      service: "stok-skt-cari-takip",
+      database: "D1",
+      timestamp: today()
+    });
+  }
+
+  if (
+    path === "/api/dashboard" &&
+    method === "GET"
+  ) {
+    return dashboard(DB);
+  }
+
+  if (
+    path === "/api/urunler" &&
+    method === "GET"
+  ) {
+    return products(DB, request);
+  }
+
+  if (
+    path === "/api/urunler/barkod" &&
+    method === "GET"
+  ) {
+    return barcode(DB, request);
+  }
+
+  if (
+    path === "/api/stok" &&
+    method === "GET"
+  ) {
+    return stock(DB, request);
+  }
+
+  if (
+    path === "/api/skt" &&
+    method === "GET"
+  ) {
+    return skt(DB, request);
+  }
+
+  if (
+    path === "/api/cari-hareketleri" &&
+    method === "GET"
+  ) {
+    return cariHareketleri(DB, request);
+  }
+
+  if (
+    path === "/api/kasa-hareketleri" &&
+    method === "GET"
+  ) {
+    return kasaHareketleri(DB, request);
+  }
+
+  if (
+    path === "/api/fire" &&
+    method === "GET"
+  ) {
+    return listFire(DB, request);
+  }
+
+  if (
+    path === "/api/sayimlar" &&
+    method === "GET"
+  ) {
+    return listSayim(DB, request);
+  }
+
+  if (
+    path === "/api/raporlar" &&
+    method === "GET"
+  ) {
+    return reports(DB);
+  }
+
+  if (
+    path === "/api/stok-hareketi" &&
+    method === "POST"
+  ) {
+    const body =
+      await readBody(request);
+
+    return stockMovement(
+      DB,
+      body
+    );
+  }
+
+  if (
+    path === "/api/fire" &&
+    method === "POST"
+  ) {
+    const body =
+      await readBody(request);
+
+    return createFire(
+      DB,
+      body
+    );
+  }
+
+  if (
+    path === "/api/sayimlar" &&
+    method === "POST"
+  ) {
+    const body =
+      await readBody(request);
+
+    return createSayim(
+      DB,
+      body
+    );
+  }
+
+  const match =
+    path.match(
+      /^\/api\/([^/]+)(?:\/(\d+))?$/
+    );
+
+  if (match) {
+
+    const routeName =
+      match[1];
+
+    const id =
+      match[2]
+        ? Number(match[2])
+        : null;
+
+    const config =
+      TABLES[routeName];
+
+    if (config) {
+
+      if (
+        id !== null &&
+        !validId(id)
+      ) {
+        return fail(
+          "Geçersiz kayıt ID."
+        );
+      }
+
+      if (method === "GET") {
+
+        if (id !== null) {
+          return getTable(
+            DB,
+            config,
+            id
+          );
+        }
+
+        return listTable(
+          DB,
+          config,
+          request
+        );
+      }
+
+      if (method === "POST") {
+
+        const body =
+          await readBody(request);
+
+        return createTable(
+          DB,
+          config,
+          body
+        );
+      }
+
+      if (
+        (method === "PUT" ||
+         method === "PATCH") &&
+        id !== null
+      ) {
+
+        const body =
+          await readBody(request);
+
+        return updateTable(
+          DB,
+          config,
+          id,
+          body
+        );
+      }
+
+      if (
+        method === "DELETE" &&
+        id !== null
+      ) {
+
+        return deleteTable(
+          DB,
+          config,
+          id
+        );
+      }
+    }
+  }
+
+  return fail(
+    "API endpoint bulunamadı.",
+    404,
+    { path, method }
+  );
+}
+
+
 export default {
+
   async fetch(request, env) {
 
-    const url = new URL(request.url);
-    const path = url.pathname;
+    if (
+      request.method === "OPTIONS"
+    ) {
 
-    if (request.method === "OPTIONS") {
       return new Response(null, {
         status: 204,
-        headers: cors
+        headers: CORS
       });
     }
 
     try {
 
-      // ================================
-      // SİSTEM SAĞLIK KONTROLÜ
-      // ================================
-
-      if (request.method === "GET" && path === "/api/health") {
-
-        return json({
-          ok: true,
-          service: "stok-skt-cari-takip",
-          database: "D1",
-          time: new Date().toISOString()
-        });
-      }
-
-
-      // ================================
-      // DASHBOARD
-      // ================================
-
-      if (request.method === "GET" && path === "/api/dashboard") {
-
-        const firmalar = await env.DB
-          .prepare(`
-            SELECT COUNT(*) AS sayi
-            FROM firmalar
-            WHERE aktif = 1
-          `)
-          .first();
-
-        const subeler = await env.DB
-          .prepare(`
-            SELECT COUNT(*) AS sayi
-            FROM subeler
-            WHERE aktif = 1
-          `)
-          .first();
-
-        const urunler = await env.DB
-          .prepare(`
-            SELECT COUNT(*) AS sayi
-            FROM urunler
-            WHERE aktif = 1
-          `)
-          .first();
-
-        const cariler = await env.DB
-          .prepare(`
-            SELECT COALESCE(SUM(bakiye),0) AS bakiye
-            FROM cariler
-            WHERE aktif = 1
-          `)
-          .first();
-
-        const stok = await env.DB
-          .prepare(`
-            SELECT COALESCE(SUM(miktar),0) AS miktar
-            FROM mevcut_stoklar
-          `)
-          .first();
-
-        return json({
-          ok: true,
-          firmalar: firmalar?.sayi || 0,
-          subeler: subeler?.sayi || 0,
-          urunler: urunler?.sayi || 0,
-          cari_bakiye: cariler?.bakiye || 0,
-          toplam_stok: stok?.miktar || 0
-        });
-      }
-
-
-// ================================
-// FİRMALAR - CRUD
-// ================================
-
-// GET /api/firmalar
-// Tüm aktif firmaları getir
-if (request.method === "GET" && path === "/api/firmalar") {
-  const { results } = await env.DB
-    .prepare(`
-      SELECT
-        id,
-        ad,
-        vergi_no,
-        telefon,
-        email,
-        adres,
-        aktif,
-        olusturma_tarihi
-      FROM firmalar
-      WHERE aktif = 1
-      ORDER BY id DESC
-    `)
-    .all();
-
-  return json(results);
-}
-
-
-// /api/firmalar/:id
-const firmaMatch = path.match(/^\/api\/firmalar\/(\d+)$/);
-const firmaId = firmaMatch ? Number(firmaMatch[1]) : null;
-
-
-// GET /api/firmalar/:id
-// Tek firma getir
-if (request.method === "GET" && firmaId !== null) {
-
-  const firma = await env.DB
-    .prepare(`
-      SELECT
-        id,
-        ad,
-        vergi_no,
-        telefon,
-        email,
-        adres,
-        aktif,
-        olusturma_tarihi
-      FROM firmalar
-      WHERE id = ?
-        AND aktif = 1
-    `)
-    .bind(firmaId)
-    .first();
-
-  if (!firma) {
-    return json({
-      ok: false,
-      error: "Firma bulunamadı."
-    }, 404);
-  }
-
-  return json(firma);
-}
-
-
-// POST /api/firmalar
-// Yeni firma ekle
-if (request.method === "POST" && path === "/api/firmalar") {
-
-  const body = await request.json();
-
-  const ad = String(body.ad ?? "").trim();
-  const vergiNo = String(body.vergi_no ?? "").trim() || null;
-  const telefon = String(body.telefon ?? "").trim() || null;
-  const email = String(body.email ?? "").trim() || null;
-  const adres = String(body.adres ?? "").trim() || null;
-
-  // Firma adı zorunlu
-  if (!ad) {
-    return json({
-      ok: false,
-      error: "Firma adı zorunludur."
-    }, 400);
-  }
-
-  // Vergi numarası mükerrer kontrolü
-  if (vergiNo) {
-
-    const mevcut = await env.DB
-      .prepare(`
-        SELECT id, ad
-        FROM firmalar
-        WHERE vergi_no = ?
-          AND aktif = 1
-        LIMIT 1
-      `)
-      .bind(vergiNo)
-      .first();
-
-    if (mevcut) {
-      return json({
-        ok: false,
-        error: "Bu vergi numarasıyla kayıtlı aktif bir firma zaten var.",
-        mevcut_firma_id: mevcut.id,
-        mevcut_firma: mevcut.ad
-      }, 409);
-    }
-  }
-
-  const result = await env.DB
-    .prepare(`
-      INSERT INTO firmalar
-      (
-        ad,
-        vergi_no,
-        telefon,
-        email,
-        adres,
-        aktif
-      )
-      VALUES (?, ?, ?, ?, ?, 1)
-    `)
-    .bind(
-      ad,
-      vergiNo,
-      telefon,
-      email,
-      adres
-    )
-    .run();
-
-  const yeniFirma = await env.DB
-    .prepare(`
-      SELECT
-        id,
-        ad,
-        vergi_no,
-        telefon,
-        email,
-        adres,
-        aktif,
-        olusturma_tarihi
-      FROM firmalar
-      WHERE id = ?
-    `)
-    .bind(result.meta.last_row_id)
-    .first();
-
-  return json({
-    ok: true,
-    mesaj: "Firma başarıyla oluşturuldu.",
-    firma: yeniFirma
-  }, 201);
-}
-
-
-// PUT /api/firmalar/:id
-// Firma güncelle
-if (request.method === "PUT" && firmaId !== null) {
-
-  const mevcut = await env.DB
-    .prepare(`
-      SELECT
-        id,
-        ad,
-        vergi_no,
-        telefon,
-        email,
-        adres
-      FROM firmalar
-      WHERE id = ?
-    `)
-    .bind(firmaId)
-    .first();
-
-  if (!mevcut) {
-    return json({
-      ok: false,
-      error: "Firma bulunamadı."
-    }, 404);
-  }
-
-  const body = await request.json();
-
-  const ad = String(body.ad ?? mevcut.ad ?? "").trim();
-  const vergiNo =
-    String(body.vergi_no ?? mevcut.vergi_no ?? "").trim() || null;
-
-  const telefon =
-    String(body.telefon ?? mevcut.telefon ?? "").trim() || null;
-
-  const email =
-    String(body.email ?? mevcut.email ?? "").trim() || null;
-
-  const adres =
-    String(body.adres ?? mevcut.adres ?? "").trim() || null;
-
-
-  // Firma adı zorunlu
-  if (!ad) {
-    return json({
-      ok: false,
-      error: "Firma adı zorunludur."
-    }, 400);
-  }
-
-
-  // Başka firmada aynı vergi numarası var mı?
-  if (vergiNo) {
-
-    const duplicate = await env.DB
-      .prepare(`
-        SELECT id, ad
-        FROM firmalar
-        WHERE vergi_no = ?
-          AND id != ?
-          AND aktif = 1
-        LIMIT 1
-      `)
-      .bind(vergiNo, firmaId)
-      .first();
-
-    if (duplicate) {
-      return json({
-        ok: false,
-        error: "Bu vergi numarası başka bir aktif firmaya ait.",
-        mevcut_firma_id: duplicate.id,
-        mevcut_firma: duplicate.ad
-      }, 409);
-    }
-  }
-
-
-  await env.DB
-    .prepare(`
-      UPDATE firmalar
-      SET
-        ad = ?,
-        vergi_no = ?,
-        telefon = ?,
-        email = ?,
-        adres = ?
-      WHERE id = ?
-    `)
-    .bind(
-      ad,
-      vergiNo,
-      telefon,
-      email,
-      adres,
-      firmaId
-    )
-    .run();
-
-
-  const guncelFirma = await env.DB
-    .prepare(`
-      SELECT
-        id,
-        ad,
-        vergi_no,
-        telefon,
-        email,
-        adres,
-        aktif,
-        olusturma_tarihi
-      FROM firmalar
-      WHERE id = ?
-    `)
-    .bind(firmaId)
-    .first();
-
-
-  return json({
-    ok: true,
-    mesaj: "Firma başarıyla güncellendi.",
-    firma: guncelFirma
-  });
-}
-
-
-// DELETE /api/firmalar/:id
-// Firmayı fiziksel olarak silmez.
-// Sadece pasifleştirir.
-if (request.method === "DELETE" && firmaId !== null) {
-
-  const mevcut = await env.DB
-    .prepare(`
-      SELECT id, ad
-      FROM firmalar
-      WHERE id = ?
-        AND aktif = 1
-    `)
-    .bind(firmaId)
-    .first();
-
-  if (!mevcut) {
-    return json({
-      ok: false,
-      error: "Firma bulunamadı veya zaten pasif."
-    }, 404);
-  }
-
-
-  // Bağlı kayıtları kontrol et
-  const bagli = await env.DB
-    .prepare(`
-      SELECT
-
-        (
-          SELECT COUNT(*)
-          FROM subeler
-          WHERE firma_id = ?
-        ) AS sube_sayisi,
-
-        (
-          SELECT COUNT(*)
-          FROM cariler
-          WHERE firma_id = ?
-        ) AS cari_sayisi,
-
-        (
-          SELECT COUNT(*)
-          FROM urunler
-          WHERE firma_id = ?
-        ) AS urun_sayisi
-
-    `)
-    .bind(
-      firmaId,
-      firmaId,
-      firmaId
-    )
-    .first();
-
-
-  // Soft delete
-  await env.DB
-    .prepare(`
-      UPDATE firmalar
-      SET aktif = 0
-      WHERE id = ?
-    `)
-    .bind(firmaId)
-    .run();
-
-
-  return json({
-    ok: true,
-    mesaj: "Firma pasifleştirildi.",
-    id: firmaId,
-
-    bagli_kayitlar: {
-      sube: Number(bagli?.sube_sayisi || 0),
-      cari: Number(bagli?.cari_sayisi || 0),
-      urun: Number(bagli?.urun_sayisi || 0)
-    }
-  });
-}
-
-      // ================================
-      // KATEGORİLER
-      // ================================
-
-      if (request.method === "GET" && path === "/api/kategoriler") {
-
-        const { results } = await env.DB
-          .prepare(`
-            SELECT
-              k.*,
-              f.ad AS firma_adi
-            FROM kategoriler k
-            JOIN firmalar f
-              ON f.id = k.firma_id
-            WHERE k.aktif = 1
-            ORDER BY k.id DESC
-          `)
-          .all();
-
-        return json(results);
-      }
-
-
-      // ================================
-      // BİRİMLER
-      // ================================
-
-      if (request.method === "GET" && path === "/api/birimler") {
-
-        const { results } = await env.DB
-          .prepare(`
-            SELECT *
-            FROM birimler
-            ORDER BY id
-          `)
-          .all();
-
-        return json(results);
-      }
-
-
-      // ================================
-// ÜRÜNLER - LİSTELE
-// ================================
-
-if (request.method === "GET" && path === "/api/urunler") {
-
-  const { results } = await env.DB
-    .prepare(`
-      SELECT
-        u.*,
-        f.ad AS firma_adi,
-        k.ad AS kategori_adi,
-        b.ad AS birim_adi,
-        b.sembol AS birim_sembol
-      FROM urunler u
-
-      JOIN firmalar f
-        ON f.id = u.firma_id
-
-      LEFT JOIN kategoriler k
-        ON k.id = u.kategori_id
-
-      JOIN birimler b
-        ON b.id = u.birim_id
-
-      WHERE u.aktif = 1
-
-      ORDER BY u.id DESC
-    `)
-    .all();
-
-  return json(results);
-}
-
-
-// ================================
-// ÜRÜNLER - EKLE
-// ================================
-
-if (request.method === "POST" && path === "/api/urunler") {
-
-  const body = await request.json();
-
-  if (
-    !body.firma_id ||
-    !body.birim_id ||
-    !body.kod ||
-    !body.ad
-  ) {
-
-    return json({
-      ok: false,
-      error: "Firma, birim, ürün kodu ve ürün adı zorunludur."
-    }, 400);
-
-  }
-
-  const result = await env.DB
-    .prepare(`
-      INSERT INTO urunler (
-        firma_id,
-        kategori_id,
-        birim_id,
-        kod,
-        ad,
-        marka,
-        alis_fiyati,
-        satis_fiyati,
-        minimum_stok,
-        maksimum_stok,
-        kdv_orani,
-        terazi_urunu,
-        aktif
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
-    `)
-    .bind(
-      Number(body.firma_id),
-      body.kategori_id ? Number(body.kategori_id) : null,
-      Number(body.birim_id),
-      body.kod.trim(),
-      body.ad.trim(),
-      body.marka?.trim() || null,
-      Number(body.alis_fiyati || 0),
-      Number(body.satis_fiyati || 0),
-      Number(body.minimum_stok || 0),
-      Number(body.maksimum_stok || 0),
-      Number(body.kdv_orani || 0),
-      body.tartili_urun ? 1 : 0
-    )
-    .run();
-
-  return json({
-    ok: true,
-    mesaj: "Ürün başarıyla oluşturuldu.",
-    id: result.meta.last_row_id
-  }, 201);
-}
-if (request.method === "GET" && path === "/api/urunler") {
-const { results } = await env.DB
-          .prepare(`
-            SELECT
-              u.*,
-              f.ad AS firma_adi,
-              k.ad AS kategori_adi,
-              b.ad AS birim_adi,
-              b.sembol AS birim_sembol
-            FROM urunler u
-            JOIN firmalar f
-              ON f.id = u.firma_id
-            LEFT JOIN kategoriler k
-              ON k.id = u.kategori_id
-            JOIN birimler b
-              ON b.id = u.birim_id
-            WHERE u.aktif = 1
-            ORDER BY u.id DESC
-          `)
-          .all();
-
-        return json(results);
-      }
-
-
-      // ================================
-      // BARKODLAR
-      // ================================
-
-      if (request.method === "GET" && path === "/api/barkodlar") {
-
-        const { results } = await env.DB
-          .prepare(`
-            SELECT
-              b.*,
-              u.kod AS urun_kodu,
-              u.ad AS urun_adi
-            FROM barkodlar b
-            JOIN urunler u
-              ON u.id = b.urun_id
-            ORDER BY b.id DESC
-          `)
-          .all();
-
-        return json(results);
-      }
-
-
-      // ================================
-      // DEPOLAR
-      // ================================
-
-      if (request.method === "GET" && path === "/api/depolar") {
-
-        const { results } = await env.DB
-          .prepare(`
-            SELECT
-              d.*,
-              s.ad AS sube_adi
-            FROM depolar d
-            JOIN subeler s
-              ON s.id = d.sube_id
-            WHERE d.aktif = 1
-            ORDER BY d.id DESC
-          `)
-          .all();
-
-        return json(results);
-      }
-
-
-    // ================================
-// STOK
-// ================================
-
-if (request.method === "GET" && path === "/api/stok") {
-
-  const { results } = await env.DB
-    .prepare(`
-      SELECT
-        ms.urun_id,
-        ms.depo_id,
-        ms.miktar AS mevcut_miktar,
-
-        u.kod,
-        u.ad AS urun_adi,
-        u.minimum_stok,
-        u.maksimum_stok,
-
-        d.ad AS depo_adi
-
-      FROM mevcut_stoklar ms
-
-      JOIN urunler u
-        ON u.id = ms.urun_id
-
-      JOIN depolar d
-        ON d.id = ms.depo_id
-
-      WHERE u.aktif = 1
-        AND d.aktif = 1
-
-      ORDER BY u.ad
-    `)
-    .all();
-
-  return json(results);
-}
-      // ================================
-      // PARTİ / SKT
-      // ================================
-
-      if (request.method === "GET" && path === "/api/skt") {
-
-        const { results } = await env.DB
-          .prepare(`
-            SELECT
-              p.*,
-              u.kod AS urun_kodu,
-              u.ad AS urun_adi,
-              d.ad AS depo_adi
-            FROM partiler p
-            JOIN urunler u
-              ON u.id = p.urun_id
-            JOIN depolar d
-              ON d.id = p.depo_id
-            ORDER BY p.son_kullanma_tarihi ASC
-          `)
-          .all();
-
-        return json(results);
-      }
-
-
-      // ================================
-      // CARİLER
-      // ================================
-
-      if (request.method === "GET" && path === "/api/cariler") {
-
-        const { results } = await env.DB
-          .prepare(`
-            SELECT
-              c.*,
-              f.ad AS firma_adi
-            FROM cariler c
-            JOIN firmalar f
-              ON f.id = c.firma_id
-            WHERE c.aktif = 1
-            ORDER BY c.id DESC
-          `)
-          .all();
-
-        return json(results);
-      }
-
-
-      // ================================
-      // KASALAR
-      // ================================
-
-      if (request.method === "GET" && path === "/api/kasalar") {
-
-        const { results } = await env.DB
-          .prepare(`
-            SELECT
-              k.*,
-              s.ad AS sube_adi
-            FROM kasalar k
-            JOIN subeler s
-              ON s.id = k.sube_id
-            WHERE k.aktif = 1
-            ORDER BY k.id DESC
-          `)
-          .all();
-
-        return json(results);
-      }
-
-
-      // ================================
-      // SATIN ALMA
-      // ================================
-
       if (
-        request.method === "GET" &&
-        path === "/api/satin-alma"
+        new URL(request.url)
+          .pathname
+          .startsWith("/api/")
       ) {
 
-        const { results } = await env.DB
-          .prepare(`
-            SELECT *
-            FROM satin_alma_siparisleri
-            ORDER BY id DESC
-          `)
-          .all();
-
-        return json(results);
+        return await route(
+          request,
+          env
+        );
       }
 
-
-      // ================================
-      // MAL KABUL
-      // ================================
-
-      if (
-        request.method === "GET" &&
-        path === "/api/mal-kabul"
-      ) {
-
-        const { results } = await env.DB
-          .prepare(`
-            SELECT *
-            FROM mal_kabuller
-            ORDER BY id DESC
-          `)
-          .all();
-
-        return json(results);
+      if (env.ASSETS) {
+        return env.ASSETS.fetch(
+          request
+        );
       }
 
-
-      // ================================
-      // SATIŞLAR
-      // ================================
-
-      if (request.method === "GET" && path === "/api/satislar") {
-
-        const { results } = await env.DB
-          .prepare(`
-            SELECT *
-            FROM satislar
-            ORDER BY id DESC
-          `)
-          .all();
-
-        return json(results);
-      }
-
-
-      // ================================
-      // ÖDEME YÖNTEMLERİ
-      // ================================
-
-      if (
-        request.method === "GET" &&
-        path === "/api/odeme-yontemleri"
-      ) {
-
-        const { results } = await env.DB
-          .prepare(`
-            SELECT *
-            FROM odeme_yontemleri
-            WHERE aktif = 1
-            ORDER BY id
-          `)
-          .all();
-
-        return json(results);
-      }
-
-
-      // ================================
-      // 404
-      // ================================
-
-      return json({
-        ok: false,
-        error: "API endpoint bulunamadı",
-        path
-      }, 404);
-
+      return new Response(
+        "SKT Stok & Cari Takip",
+        {
+          status: 200,
+          headers: {
+            "content-type":
+              "text/plain; charset=UTF-8"
+          }
+        }
+      );
 
     } catch (error) {
 
-      return json({
-        ok: false,
-        error: error.message,
-        path
-      }, 500);
+      console.error(
+        "WORKER_ERROR",
+        error
+      );
+
+      return fail(
+        error?.message ||
+        "Beklenmeyen sunucu hatası.",
+        500
+      );
     }
   }
 };
