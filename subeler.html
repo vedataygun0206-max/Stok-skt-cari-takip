@@ -1,1 +1,1628 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07111f">
+  <meta name="description" content="Şube Yönetimi - SKT Stok & Cari Takip">
+  <title>Şubeler | SKT Stok & Cari Takip</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
 
+<body>
+
+<header class="topbar">
+
+  <div class="brand">
+    <div class="brand-icon">📦</div>
+    <div>
+      <strong>SKT STOK</strong>
+      <small>CARİ TAKİP</small>
+    </div>
+  </div>
+
+  <div class="top-actions">
+    <button class="icon-btn"
+            onclick="location.reload()"
+            title="Yenile">↻</button>
+
+    <a href="/index.html"
+       class="user-btn">
+      🏠 Dashboard
+    </a>
+  </div>
+
+</header>
+
+
+<div class="layout">
+
+  <aside class="sidebar">
+
+    <div class="menu-title">ANA MENÜ</div>
+
+    <nav>
+
+      <a class="menu-item" href="/index.html">
+        <span>🏠</span>
+        <span>Dashboard</span>
+      </a>
+
+      <a class="menu-item" href="/products.html">
+        <span>📦</span>
+        <span>Ürünler</span>
+      </a>
+
+      <a class="menu-item" href="/stock.html">
+        <span>📊</span>
+        <span>Stok</span>
+      </a>
+
+      <a class="menu-item" href="/skt.html">
+        <span>⏰</span>
+        <span>SKT Takip</span>
+      </a>
+
+      <a class="menu-item" href="/sayim.html">
+        <span>📝</span>
+        <span>Sayım</span>
+      </a>
+
+      <a class="menu-item" href="/fire.html">
+        <span>⚠️</span>
+        <span>Fire</span>
+      </a>
+
+      <div class="menu-title">TİCARİ</div>
+
+      <a class="menu-item" href="/firmalar.html">
+        <span>🏢</span>
+        <span>Firmalar</span>
+      </a>
+
+      <a class="menu-item active" href="/subeler.html">
+        <span>🏬</span>
+        <span>Şubeler</span>
+      </a>
+
+      <a class="menu-item" href="/cariler.html">
+        <span>👥</span>
+        <span>Cariler</span>
+      </a>
+
+      <a class="menu-item" href="/satin-alma.html">
+        <span>🛒</span>
+        <span>Satın Alma</span>
+      </a>
+
+      <a class="menu-item" href="/mal-kabul.html">
+        <span>🚚</span>
+        <span>Mal Kabul</span>
+      </a>
+
+      <div class="menu-title">SATIŞ</div>
+
+      <a class="menu-item" href="/pos.html">
+        <span>💳</span>
+        <span>POS / Satış</span>
+      </a>
+
+      <a class="menu-item" href="/kasa.html">
+        <span>💰</span>
+        <span>Kasa</span>
+      </a>
+
+      <div class="menu-title">RAPORLAMA</div>
+
+      <a class="menu-item" href="/raporlar.html">
+        <span>📈</span>
+        <span>Raporlar</span>
+      </a>
+
+      <a class="menu-item" href="/kullanicilar.html">
+        <span>🔐</span>
+        <span>Kullanıcılar</span>
+      </a>
+
+    </nav>
+
+  </aside>
+
+
+  <main class="main">
+
+    <div class="page-head">
+
+      <div>
+        <h1>Şubeler</h1>
+        <p>
+          Mağaza, depo ve işletme şubelerini yönetin.
+        </p>
+      </div>
+
+      <button class="btn primary"
+              onclick="openSubeModal()">
+        ＋ Yeni Şube
+      </button>
+
+    </div>
+
+
+    <section class="stats">
+
+      <div class="stat-card">
+        <div class="stat-icon blue">🏬</div>
+        <div>
+          <span>Toplam Şube</span>
+          <strong id="totalCount">0</strong>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon green">✓</div>
+        <div>
+          <span>Aktif Şube</span>
+          <strong id="activeCount">0</strong>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon orange">📦</div>
+        <div>
+          <span>Depo</span>
+          <strong id="warehouseCount">0</strong>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon purple">📍</div>
+        <div>
+          <span>Şehir</span>
+          <strong id="cityCount">0</strong>
+        </div>
+      </div>
+
+    </section>
+
+
+    <section class="panel">
+
+      <div class="search-bar">
+
+        <input
+          id="search"
+          type="search"
+          placeholder="Şube adı, kodu, telefon veya şehir ara..."
+          autocomplete="off">
+
+        <button class="btn"
+                onclick="loadSubeler()">
+          🔎 Ara
+        </button>
+
+        <button class="btn"
+                onclick="clearSearch()">
+          Temizle
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <section class="panel">
+
+      <div class="panel-head">
+
+        <div>
+          <h2>Şube Listesi</h2>
+          <p id="listInfo">Yükleniyor...</p>
+        </div>
+
+        <button class="btn"
+                onclick="loadSubeler()">
+          ↻ Yenile
+        </button>
+
+      </div>
+
+
+      <div class="table-wrap">
+
+        <table>
+
+          <thead>
+            <tr>
+              <th>Kod</th>
+              <th>Şube</th>
+              <th>Tür</th>
+              <th>Yetkili</th>
+              <th>Telefon</th>
+              <th>Konum</th>
+              <th>Durum</th>
+              <th>İşlem</th>
+            </tr>
+          </thead>
+
+          <tbody id="subeTable">
+
+            <tr>
+              <td colspan="8" class="empty">
+                Şubeler yükleniyor...
+              </td>
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+  </main>
+
+</div>
+
+
+<!-- ŞUBE MODAL -->
+
+<div id="subeModal"
+     class="modal hidden">
+
+  <div class="modal-box">
+
+    <div class="modal-head">
+
+      <div>
+        <h2 id="modalTitle">Yeni Şube</h2>
+        <p>Şube bilgilerini girin.</p>
+      </div>
+
+      <button class="modal-close"
+              onclick="closeSubeModal()">
+        ×
+      </button>
+
+    </div>
+
+
+    <form id="subeForm"
+          onsubmit="saveSube(event)">
+
+      <input type="hidden"
+             id="subeId">
+
+
+      <div class="form-grid">
+
+        <label>
+          Şube Kodu *
+          <input id="kod"
+                 required
+                 maxlength="50"
+                 placeholder="Örn: MERKEZ-01">
+        </label>
+
+
+        <label>
+          Şube Adı *
+          <input id="ad"
+                 required
+                 maxlength="200"
+                 placeholder="Örn: Merkez Mağaza">
+        </label>
+
+
+        <label>
+          Şube Türü
+          <select id="tur">
+
+            <option value="magaza">
+              Mağaza
+            </option>
+
+            <option value="depo">
+              Depo
+            </option>
+
+            <option value="merkez">
+              Merkez
+            </option>
+
+            <option value="ofis">
+              Ofis
+            </option>
+
+            <option value="diger">
+              Diğer
+            </option>
+
+          </select>
+        </label>
+
+
+        <label>
+          Yetkili
+          <input id="yetkili"
+                 maxlength="150"
+                 placeholder="Yetkili kişi">
+        </label>
+
+
+        <label>
+          Telefon
+          <input id="telefon"
+                 type="tel"
+                 maxlength="30"
+                 placeholder="05xx xxx xx xx">
+        </label>
+
+
+        <label>
+          E-posta
+          <input id="email"
+                 type="email"
+                 maxlength="150"
+                 placeholder="sube@example.com">
+        </label>
+
+
+        <label>
+          İl
+          <input id="il"
+                 maxlength="100"
+                 placeholder="İstanbul">
+        </label>
+
+
+        <label>
+          İlçe
+          <input id="ilce"
+                 maxlength="100"
+                 placeholder="Üsküdar">
+        </label>
+
+
+        <label class="full">
+          Adres
+
+          <textarea
+            id="adres"
+            rows="3"
+            maxlength="500"
+            placeholder="Şube adresi"></textarea>
+
+        </label>
+
+
+        <label class="full">
+          Notlar
+
+          <textarea
+            id="notlar"
+            rows="3"
+            maxlength="1000"
+            placeholder="Şube hakkında not"></textarea>
+
+        </label>
+
+
+        <label class="checkbox-field">
+
+          <input
+            id="aktif"
+            type="checkbox"
+            checked>
+
+          <span>
+            Aktif şube
+          </span>
+
+        </label>
+
+      </div>
+
+
+      <div id="formMessage"
+           class="form-message hidden">
+      </div>
+
+
+      <div class="modal-actions">
+
+        <button type="button"
+                class="btn"
+                onclick="closeSubeModal()">
+          İptal
+        </button>
+
+        <button type="submit"
+                class="btn primary"
+                id="saveButton">
+          Kaydet
+        </button>
+
+      </div>
+
+    </form>
+
+  </div>
+
+</div>
+
+
+<!-- DETAY -->
+
+<div id="detailModal"
+     class="modal hidden">
+
+  <div class="modal-box">
+
+    <div class="modal-head">
+
+      <div>
+        <h2>Şube Detayı</h2>
+        <p id="detailSubtitle"></p>
+      </div>
+
+      <button class="modal-close"
+              onclick="closeDetailModal()">
+        ×
+      </button>
+
+    </div>
+
+    <div id="detailContent"></div>
+
+  </div>
+
+</div>
+
+
+<div id="toast"
+     class="toast hidden">
+</div>
+
+
+<script>
+
+const API = "/api";
+
+let subeler = [];
+
+
+async function api(endpoint, options = {}) {
+
+  const response =
+    await fetch(
+      API + endpoint,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          ...(options.headers || {})
+        },
+        ...options
+      }
+    );
+
+
+  const data =
+    await response
+      .json()
+      .catch(() => ({}));
+
+
+  if (!response.ok) {
+
+    throw new Error(
+      data.error ||
+      `HTTP ${response.status}`
+    );
+
+  }
+
+
+  return data;
+
+}
+
+
+function escapeHtml(value) {
+
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+
+}
+
+
+function num(value) {
+
+  return new Intl.NumberFormat(
+    "tr-TR"
+  ).format(
+    Number(value || 0)
+  );
+
+}
+
+
+function showToast(
+  message,
+  type = "success"
+) {
+
+  const toast =
+    document.getElementById("toast");
+
+  toast.textContent = message;
+
+  toast.className =
+    "toast " + type;
+
+  setTimeout(() => {
+    toast.classList.add("hidden");
+  }, 3000);
+
+}
+
+
+function getTurText(tur) {
+
+  const map = {
+
+    magaza: "Mağaza",
+    depo: "Depo",
+    merkez: "Merkez",
+    ofis: "Ofis",
+    diger: "Diğer",
+
+    mağaza: "Mağaza"
+
+  };
+
+  return map[String(tur || "").toLowerCase()]
+    || tur
+    || "-";
+
+}
+
+
+async function loadSubeler() {
+
+  const search =
+    document
+      .getElementById("search")
+      .value
+      .trim();
+
+
+  const tbody =
+    document.getElementById(
+      "subeTable"
+    );
+
+
+  tbody.innerHTML = `
+    <tr>
+      <td colspan="8" class="empty">
+        Şubeler yükleniyor...
+      </td>
+    </tr>
+  `;
+
+
+  try {
+
+    const endpoint =
+      search
+        ? `/subeler?search=${encodeURIComponent(search)}`
+        : "/subeler";
+
+
+    const result =
+      await api(endpoint);
+
+
+    subeler =
+      result.data ||
+      result ||
+      [];
+
+
+    renderSubeler();
+
+  } catch (error) {
+
+    console.error(error);
+
+
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8"
+            class="empty danger-text">
+          ${escapeHtml(error.message)}
+        </td>
+      </tr>
+    `;
+
+  }
+
+}
+
+
+function renderSubeler() {
+
+  const tbody =
+    document.getElementById(
+      "subeTable"
+    );
+
+
+  const active =
+    subeler.filter(
+      s => Number(s.aktif) === 1
+    );
+
+
+  const depolar =
+    subeler.filter(
+      s =>
+        String(s.tur || "")
+          .toLowerCase() === "depo"
+    );
+
+
+  const cities =
+    new Set(
+      subeler
+        .map(s =>
+          String(s.il || "")
+            .trim()
+            .toLocaleLowerCase("tr-TR")
+        )
+        .filter(Boolean)
+    );
+
+
+  document.getElementById(
+    "totalCount"
+  ).textContent =
+    num(subeler.length);
+
+
+  document.getElementById(
+    "activeCount"
+  ).textContent =
+    num(active.length);
+
+
+  document.getElementById(
+    "warehouseCount"
+  ).textContent =
+    num(depolar.length);
+
+
+  document.getElementById(
+    "cityCount"
+  ).textContent =
+    num(cities.size);
+
+
+  document.getElementById(
+    "listInfo"
+  ).textContent =
+    `${num(subeler.length)} şube gösteriliyor`;
+
+
+  if (!subeler.length) {
+
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8"
+            class="empty">
+          Şube bulunamadı.
+        </td>
+      </tr>
+    `;
+
+    return;
+
+  }
+
+
+  tbody.innerHTML =
+    subeler
+      .map(sube => `
+
+        <tr>
+
+          <td>
+            <strong>
+              ${escapeHtml(
+                sube.kod ||
+                sube.sube_kodu ||
+                "-"
+              )}
+            </strong>
+          </td>
+
+
+          <td>
+
+            <div class="cell-main">
+              ${escapeHtml(
+                sube.ad ||
+                sube.sube_adi ||
+                "-"
+              )}
+            </div>
+
+          </td>
+
+
+          <td>
+            <span class="badge">
+              ${escapeHtml(
+                getTurText(
+                  sube.tur ||
+                  sube.tip ||
+                  sube.sube_turu
+                )
+              )}
+            </span>
+          </td>
+
+
+          <td>
+            ${escapeHtml(
+              sube.yetkili ||
+              "-"
+            )}
+          </td>
+
+
+          <td>
+
+            ${
+              sube.telefon
+                ? `
+                  <a href="tel:${escapeHtml(
+                    sube.telefon
+                  )}">
+                    ${escapeHtml(
+                      sube.telefon
+                    )}
+                  </a>
+                `
+                : "-"
+            }
+
+          </td>
+
+
+          <td>
+
+            ${
+              sube.il
+                ? `
+                  ${escapeHtml(sube.il)}
+                  ${
+                    sube.ilce
+                      ? ` / ${escapeHtml(sube.ilce)}`
+                      : ""
+                  }
+                `
+                : "-"
+            }
+
+          </td>
+
+
+          <td>
+
+            ${
+              Number(sube.aktif) === 1
+                ? `
+                  <span class="badge success">
+                    Aktif
+                  </span>
+                `
+                : `
+                  <span class="badge danger">
+                    Pasif
+                  </span>
+                `
+            }
+
+          </td>
+
+
+          <td>
+
+            <div class="row-actions">
+
+              <button
+                class="small-btn"
+                onclick="showDetail(${sube.id})">
+                Gör
+              </button>
+
+              <button
+                class="small-btn"
+                onclick="editSube(${sube.id})">
+                Düzenle
+              </button>
+
+              ${
+                Number(sube.aktif) === 1
+                  ? `
+                    <button
+                      class="small-btn danger-btn"
+                      onclick="deactivateSube(${sube.id})">
+                      Pasifleştir
+                    </button>
+                  `
+                  : `
+                    <button
+                      class="small-btn"
+                      onclick="activateSube(${sube.id})">
+                      Aktifleştir
+                    </button>
+                  `
+              }
+
+            </div>
+
+          </td>
+
+        </tr>
+
+      `)
+      .join("");
+
+}
+
+
+function clearSearch() {
+
+  document.getElementById(
+    "search"
+  ).value = "";
+
+  loadSubeler();
+
+}
+
+
+function resetForm() {
+
+  document
+    .getElementById("subeForm")
+    .reset();
+
+
+  document
+    .getElementById("subeId")
+    .value = "";
+
+
+  document
+    .getElementById("modalTitle")
+    .textContent =
+      "Yeni Şube";
+
+
+  document
+    .getElementById("aktif")
+    .checked = true;
+
+
+  document
+    .getElementById("tur")
+    .value = "magaza";
+
+
+  document
+    .getElementById("formMessage")
+    .classList.add(
+      "hidden"
+    );
+
+}
+
+
+function openSubeModal(
+  sube = null
+) {
+
+  resetForm();
+
+
+  document
+    .getElementById("subeModal")
+    .classList.remove(
+      "hidden"
+    );
+
+
+  if (!sube) return;
+
+
+  document
+    .getElementById("modalTitle")
+    .textContent =
+      "Şube Düzenle";
+
+
+  document
+    .getElementById("subeId")
+    .value =
+      sube.id || "";
+
+
+  document
+    .getElementById("kod")
+    .value =
+      sube.kod ||
+      sube.sube_kodu ||
+      "";
+
+
+  document
+    .getElementById("ad")
+    .value =
+      sube.ad ||
+      sube.sube_adi ||
+      "";
+
+
+  document
+    .getElementById("tur")
+    .value =
+      sube.tur ||
+      sube.tip ||
+      sube.sube_turu ||
+      "magaza";
+
+
+  document
+    .getElementById("yetkili")
+    .value =
+      sube.yetkili || "";
+
+
+  document
+    .getElementById("telefon")
+    .value =
+      sube.telefon || "";
+
+
+  document
+    .getElementById("email")
+    .value =
+      sube.email || "";
+
+
+  document
+    .getElementById("il")
+    .value =
+      sube.il || "";
+
+
+  document
+    .getElementById("ilce")
+    .value =
+      sube.ilce || "";
+
+
+  document
+    .getElementById("adres")
+    .value =
+      sube.adres || "";
+
+
+  document
+    .getElementById("notlar")
+    .value =
+      sube.notlar || "";
+
+
+  document
+    .getElementById("aktif")
+    .checked =
+      Number(sube.aktif) === 1;
+
+}
+
+
+function closeSubeModal() {
+
+  document
+    .getElementById("subeModal")
+    .classList.add(
+      "hidden"
+    );
+
+}
+
+
+async function saveSube(event) {
+
+  event.preventDefault();
+
+
+  const button =
+    document.getElementById(
+      "saveButton"
+    );
+
+
+  const message =
+    document.getElementById(
+      "formMessage"
+    );
+
+
+  button.disabled = true;
+
+  button.textContent =
+    "Kaydediliyor...";
+
+
+  message.classList.add(
+    "hidden"
+  );
+
+
+  try {
+
+    const id =
+      document.getElementById(
+        "subeId"
+      ).value;
+
+
+    const kod =
+      document
+        .getElementById("kod")
+        .value
+        .trim();
+
+
+    const ad =
+      document
+        .getElementById("ad")
+        .value
+        .trim();
+
+
+    if (!kod) {
+
+      throw new Error(
+        "Şube kodu zorunludur."
+      );
+
+    }
+
+
+    if (!ad) {
+
+      throw new Error(
+        "Şube adı zorunludur."
+      );
+
+    }
+
+
+    const data = {
+
+      kod,
+
+      sube_kodu: kod,
+
+      ad,
+
+      sube_adi: ad,
+
+      tur:
+        document
+          .getElementById("tur")
+          .value,
+
+      sube_turu:
+        document
+          .getElementById("tur")
+          .value,
+
+      yetkili:
+        document
+          .getElementById("yetkili")
+          .value
+          .trim(),
+
+      telefon:
+        document
+          .getElementById("telefon")
+          .value
+          .trim(),
+
+      email:
+        document
+          .getElementById("email")
+          .value
+          .trim(),
+
+      il:
+        document
+          .getElementById("il")
+          .value
+          .trim(),
+
+      ilce:
+        document
+          .getElementById("ilce")
+          .value
+          .trim(),
+
+      adres:
+        document
+          .getElementById("adres")
+          .value
+          .trim(),
+
+      notlar:
+        document
+          .getElementById("notlar")
+          .value
+          .trim(),
+
+      aktif:
+        document
+          .getElementById("aktif")
+          .checked
+            ? 1
+            : 0
+
+    };
+
+
+    if (id) {
+
+      await api(
+        `/subeler/${id}`,
+        {
+          method: "PUT",
+          body: JSON.stringify(data)
+        }
+      );
+
+
+      showToast(
+        "Şube güncellendi."
+      );
+
+    } else {
+
+      await api(
+        "/subeler",
+        {
+          method: "POST",
+          body: JSON.stringify(data)
+        }
+      );
+
+
+      showToast(
+        "Şube oluşturuldu."
+      );
+
+    }
+
+
+    closeSubeModal();
+
+    await loadSubeler();
+
+
+  } catch (error) {
+
+    console.error(error);
+
+
+    message.textContent =
+      error.message;
+
+
+    message.classList.remove(
+      "hidden"
+    );
+
+  } finally {
+
+    button.disabled = false;
+
+    button.textContent =
+      "Kaydet";
+
+  }
+
+}
+
+
+async function editSube(id) {
+
+  try {
+
+    const result =
+      await api(
+        `/subeler/${id}`
+      );
+
+
+    const sube =
+      result.data ||
+      result;
+
+
+    openSubeModal(
+      sube
+    );
+
+
+  } catch (error) {
+
+    showToast(
+      error.message,
+      "error"
+    );
+
+  }
+
+}
+
+
+async function deactivateSube(id) {
+
+  const sube =
+    subeler.find(
+      s =>
+        Number(s.id) ===
+        Number(id)
+    );
+
+
+  if (!sube) return;
+
+
+  const name =
+    sube.ad ||
+    sube.sube_adi ||
+    "Bu şube";
+
+
+  if (
+    !confirm(
+      `"${name}" şubesini pasifleştirmek istiyor musunuz?`
+    )
+  ) {
+    return;
+  }
+
+
+  try {
+
+    await api(
+      `/subeler/${id}`,
+      {
+        method: "PUT",
+        body: JSON.stringify({
+          aktif: 0
+        })
+      }
+    );
+
+
+    showToast(
+      "Şube pasifleştirildi."
+    );
+
+
+    await loadSubeler();
+
+
+  } catch (error) {
+
+    showToast(
+      error.message,
+      "error"
+    );
+
+  }
+
+}
+
+
+async function activateSube(id) {
+
+  try {
+
+    await api(
+      `/subeler/${id}`,
+      {
+        method: "PUT",
+        body: JSON.stringify({
+          aktif: 1
+        })
+      }
+    );
+
+
+    showToast(
+      "Şube aktifleştirildi."
+    );
+
+
+    await loadSubeler();
+
+
+  } catch (error) {
+
+    showToast(
+      error.message,
+      "error"
+    );
+
+  }
+
+}
+
+
+function showDetail(id) {
+
+  const sube =
+    subeler.find(
+      s =>
+        Number(s.id) ===
+        Number(id)
+    );
+
+
+  if (!sube) return;
+
+
+  const name =
+    sube.ad ||
+    sube.sube_adi ||
+    "-";
+
+
+  document
+    .getElementById(
+      "detailSubtitle"
+    )
+    .textContent =
+      name;
+
+
+  document
+    .getElementById(
+      "detailContent"
+    )
+    .innerHTML = `
+
+      <div class="detail-grid">
+
+        <div>
+          <span>Şube Kodu</span>
+          <strong>
+            ${escapeHtml(
+              sube.kod ||
+              sube.sube_kodu ||
+              "-"
+            )}
+          </strong>
+        </div>
+
+
+        <div>
+          <span>Şube Adı</span>
+          <strong>
+            ${escapeHtml(name)}
+          </strong>
+        </div>
+
+
+        <div>
+          <span>Şube Türü</span>
+          <strong>
+            ${escapeHtml(
+              getTurText(
+                sube.tur ||
+                sube.tip ||
+                sube.sube_turu
+              )
+            )}
+          </strong>
+        </div>
+
+
+        <div>
+          <span>Yetkili</span>
+          <strong>
+            ${escapeHtml(
+              sube.yetkili ||
+              "-"
+            )}
+          </strong>
+        </div>
+
+
+        <div>
+          <span>Telefon</span>
+          <strong>
+            ${escapeHtml(
+              sube.telefon ||
+              "-"
+            )}
+          </strong>
+        </div>
+
+
+        <div>
+          <span>E-posta</span>
+          <strong>
+            ${escapeHtml(
+              sube.email ||
+              "-"
+            )}
+          </strong>
+        </div>
+
+
+        <div>
+          <span>İl</span>
+          <strong>
+            ${escapeHtml(
+              sube.il ||
+              "-"
+            )}
+          </strong>
+        </div>
+
+
+        <div>
+          <span>İlçe</span>
+          <strong>
+            ${escapeHtml(
+              sube.ilce ||
+              "-"
+            )}
+          </strong>
+        </div>
+
+
+        <div class="full-detail">
+          <span>Adres</span>
+          <strong>
+            ${escapeHtml(
+              sube.adres ||
+              "-"
+            )}
+          </strong>
+        </div>
+
+
+        <div class="full-detail">
+          <span>Notlar</span>
+          <strong>
+            ${escapeHtml(
+              sube.notlar ||
+              "-"
+            )}
+          </strong>
+        </div>
+
+
+        <div>
+          <span>Durum</span>
+          <strong>
+            ${
+              Number(sube.aktif) === 1
+                ? "Aktif"
+                : "Pasif"
+            }
+          </strong>
+        </div>
+
+      </div>
+
+    `;
+
+
+  document
+    .getElementById(
+      "detailModal"
+    )
+    .classList.remove(
+      "hidden"
+    );
+
+}
+
+
+function closeDetailModal() {
+
+  document
+    .getElementById(
+      "detailModal"
+    )
+    .classList.add(
+      "hidden"
+    );
+
+}
+
+
+document
+  .getElementById("search")
+  .addEventListener(
+    "keydown",
+    event => {
+
+      if (
+        event.key === "Enter"
+      ) {
+
+        loadSubeler();
+
+      }
+
+    }
+  );
+
+
+document.addEventListener(
+  "click",
+  event => {
+
+    if (
+      event.target.id ===
+      "subeModal"
+    ) {
+
+      closeSubeModal();
+
+    }
+
+
+    if (
+      event.target.id ===
+      "detailModal"
+    ) {
+
+      closeDetailModal();
+
+    }
+
+  }
+);
+
+
+document.addEventListener(
+  "DOMContentLoaded",
+  () => {
+
+    loadSubeler();
+
+  }
+);
+
+</script>
+
+</body>
+</html>
