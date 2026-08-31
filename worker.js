@@ -1532,64 +1532,7 @@ async function deleteSatinAlma(DB, id) {
   .run();
 
   return ok();
-}
-/* =====================================================
-     11 - SATIN ALMA ROUTES
-     ===================================================== */
 
-  if (
-    path === "/api/satin-alma" &&
-    method === "GET"
-  ) {
-    return listSatinAlma(
-      DB,
-      request
-    );
-  }
-
-  if (
-    path === "/api/satin-alma" &&
-    method === "POST"
-  ) {
-    const body =
-      await readBody(request);
-
-    return createSatinAlma(
-      DB,
-      body
-    );
-  }
-
-  const satinAlmaMatch =
-    path.match(
-      /^\/api\/satin-alma\/(\d+)$/
-    );
-
-  if (satinAlmaMatch) {
-
-    const id =
-      Number(satinAlmaMatch[1]);
-
-    if (!validId(id)) {
-      return fail(
-        "Geçersiz satın alma ID."
-      );
-    }
-
-    if (method === "GET") {
-      return getSatinAlma(
-        DB,
-        id
-      );
-    }
-
-    if (method === "DELETE") {
-      return deleteSatinAlma(
-        DB,
-        id
-      );
-    }
-  }
 async function route(request, env) {
 
   const DB = env.DB;
