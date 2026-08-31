@@ -1,386 +1,1746 @@
 <!doctype html>
 <html lang="tr">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Firma Yönetimi — SKT Stok & Cari Takip</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07111f">
+  <meta name="description" content="Firma Yönetimi - SKT Stok & Cari Takip">
+  <title>Firmalar | SKT Stok & Cari Takip</title>
 
-<style>
-*{box-sizing:border-box}
-
-body{
-  margin:0;
-  font-family:Arial,sans-serif;
-  background:#f4f6f8;
-  color:#17202a;
-}
-
-header{
-  background:#17202a;
-  color:white;
-  padding:18px 20px;
-}
-
-.logo{
-  font-size:21px;
-  font-weight:bold;
-}
-
-.sub{
-  margin-top:5px;
-  opacity:.75;
-  font-size:13px;
-}
-
-nav{
-  background:white;
-  padding:10px;
-  display:flex;
-  gap:8px;
-  overflow-x:auto;
-  border-bottom:1px solid #ddd;
-}
-
-nav a{
-  text-decoration:none;
-  color:#17202a;
-  background:#eef1f4;
-  padding:10px 14px;
-  border-radius:8px;
-  font-weight:bold;
-  white-space:nowrap;
-}
-
-main{
-  max-width:1200px;
-  margin:auto;
-  padding:20px;
-}
-
-.top{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  margin-bottom:18px;
-}
-
-h1{
-  margin:0;
-}
-
-.panel{
-  background:white;
-  padding:20px;
-  border-radius:14px;
-  box-shadow:0 2px 10px #00000010;
-  margin-bottom:18px;
-}
-
-.form-grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-  gap:14px;
-}
-
-label{
-  display:block;
-  font-weight:bold;
-  font-size:13px;
-  margin-bottom:6px;
-}
-
-input,textarea{
-  width:100%;
-  padding:11px;
-  border:1px solid #ccd2d8;
-  border-radius:8px;
-}
-
-textarea{
-  min-height:90px;
-  resize:vertical;
-}
-
-.btn{
-  border:0;
-  padding:11px 16px;
-  border-radius:8px;
-  font-weight:bold;
-  cursor:pointer;
-}
-
-.btn-primary{
-  background:#17202a;
-  color:white;
-}
-
-.actions{
-  margin-top:16px;
-  display:flex;
-  gap:10px;
-}
-
-table{
-  width:100%;
-  border-collapse:collapse;
-}
-
-th,td{
-  padding:11px;
-  border-bottom:1px solid #eee;
-  text-align:left;
-}
-
-th{
-  background:#f0f2f4;
-}
-
-.badge{
-  padding:5px 8px;
-  border-radius:6px;
-  background:#e8f5e9;
-  color:#176b32;
-  font-weight:bold;
-}
-</style>
+  <link rel="stylesheet" href="/style.css">
 </head>
 
 <body>
 
-<header>
-  <div class="logo">📦 SKT Stok & Cari Takip</div>
-  <div class="sub">Market Yönetim ve Stok Kontrol Sistemi</div>
-</header>
+<header class="topbar">
 
-<nav>
-  <a href="/index.html">🏠 Ana Sayfa</a>
-  <a href="/firmalar.html">🏢 Firmalar</a>
-  <a href="/products.html">📦 Ürünler</a>
-  <a href="/stock.html">📊 Stok</a>
-  <a href="/skt.html">⏰ SKT</a>
-  <a href="/cari.html">🧾 Cari</a>
-  <a href="/kasa.html">💰 Kasa</a>
-  <a href="/pos.html">🛒 POS</a>
-  <a href="/reports.html">📈 Raporlar</a>
-</nav>
+  <div class="brand">
+    <div class="brand-icon">📦</div>
 
-<main>
-
-<div class="top">
-  <div>
-    <h1>🏢 Firma Yönetimi</h1>
-    <div>Firma kayıtları ve temel firma bilgileri</div>
+    <div>
+      <strong>SKT STOK</strong>
+      <small>CARİ TAKİP</small>
+    </div>
   </div>
 
-  <button class="btn btn-primary"
-          onclick="showForm()">
-    ➕ Yeni Firma
-  </button>
+  <div class="top-actions">
+
+    <button
+      class="icon-btn"
+      onclick="location.reload()"
+      title="Yenile">
+      ↻
+    </button>
+
+    <a
+      href="/index.html"
+      class="user-btn">
+      🏠 Dashboard
+    </a>
+
+  </div>
+
+</header>
+
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+
+  <aside class="sidebar">
+
+    <div class="menu-title">
+      ANA MENÜ
+    </div>
+
+    <nav>
+
+      <a class="menu-item"
+         href="/index.html">
+        <span>🏠</span>
+        <span>Dashboard</span>
+      </a>
+
+      <a class="menu-item"
+         href="/products.html">
+        <span>📦</span>
+        <span>Ürünler</span>
+      </a>
+
+      <a class="menu-item"
+         href="/stock.html">
+        <span>📊</span>
+        <span>Stok</span>
+      </a>
+
+      <a class="menu-item"
+         href="/skt.html">
+        <span>⏰</span>
+        <span>SKT Takip</span>
+      </a>
+
+      <a class="menu-item"
+         href="/sayim.html">
+        <span>📝</span>
+        <span>Sayım</span>
+      </a>
+
+      <a class="menu-item"
+         href="/fire.html">
+        <span>⚠️</span>
+        <span>Fire</span>
+      </a>
+
+
+      <div class="menu-title">
+        TİCARİ
+      </div>
+
+      <a class="menu-item active"
+         href="/firmalar.html">
+        <span>🏢</span>
+        <span>Firmalar</span>
+      </a>
+
+      <a class="menu-item"
+         href="/subeler.html">
+        <span>🏬</span>
+        <span>Şubeler</span>
+      </a>
+
+      <a class="menu-item"
+         href="/cariler.html">
+        <span>👥</span>
+        <span>Cariler</span>
+      </a>
+
+      <a class="menu-item"
+         href="/satin-alma.html">
+        <span>🛒</span>
+        <span>Satın Alma</span>
+      </a>
+
+      <a class="menu-item"
+         href="/mal-kabul.html">
+        <span>🚚</span>
+        <span>Mal Kabul</span>
+      </a>
+
+
+      <div class="menu-title">
+        SATIŞ
+      </div>
+
+      <a class="menu-item"
+         href="/pos.html">
+        <span>💳</span>
+        <span>POS / Satış</span>
+      </a>
+
+      <a class="menu-item"
+         href="/kasa.html">
+        <span>💰</span>
+        <span>Kasa</span>
+      </a>
+
+
+      <div class="menu-title">
+        RAPORLAMA
+      </div>
+
+      <a class="menu-item"
+         href="/raporlar.html">
+        <span>📈</span>
+        <span>Raporlar</span>
+      </a>
+
+      <a class="menu-item"
+         href="/kullanicilar.html">
+        <span>🔐</span>
+        <span>Kullanıcılar</span>
+      </a>
+
+    </nav>
+
+  </aside>
+
+
+  <!-- MAIN -->
+
+  <main class="main">
+
+    <div class="page-head">
+
+      <div>
+
+        <h1>Firmalar</h1>
+
+        <p>
+          Tedarikçi ve firma kayıtlarını yönetin.
+        </p>
+
+      </div>
+
+      <button
+        class="btn primary"
+        onclick="openFirmaModal()">
+        ＋ Yeni Firma
+      </button>
+
+    </div>
+
+
+    <!-- İSTATİSTİKLER -->
+
+    <section class="stats">
+
+      <div class="stat-card">
+
+        <div class="stat-icon blue">
+          🏢
+        </div>
+
+        <div>
+
+          <span>Toplam Firma</span>
+
+          <strong id="totalCount">
+            0
+          </strong>
+
+        </div>
+
+      </div>
+
+
+      <div class="stat-card">
+
+        <div class="stat-icon green">
+          ✓
+        </div>
+
+        <div>
+
+          <span>Aktif Firma</span>
+
+          <strong id="activeCount">
+            0
+          </strong>
+
+        </div>
+
+      </div>
+
+
+      <div class="stat-card">
+
+        <div class="stat-icon orange">
+          📦
+        </div>
+
+        <div>
+
+          <span>Ürün Bağlantısı</span>
+
+          <strong id="productCount">
+            0
+          </strong>
+
+        </div>
+
+      </div>
+
+
+      <div class="stat-card">
+
+        <div class="stat-icon purple">
+          👥
+        </div>
+
+        <div>
+
+          <span>Firma Yetkilisi</span>
+
+          <strong id="contactCount">
+            0
+          </strong>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ARAMA -->
+
+    <section class="panel">
+
+      <div class="search-bar">
+
+        <input
+          id="search"
+          type="search"
+          placeholder="Firma adı, vergi no, telefon veya e-posta ara..."
+          autocomplete="off">
+
+        <button
+          class="btn"
+          onclick="loadFirmalar()">
+          🔎 Ara
+        </button>
+
+        <button
+          class="btn"
+          onclick="clearSearch()">
+          Temizle
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <!-- FİRMA LİSTESİ -->
+
+    <section class="panel">
+
+      <div class="panel-head">
+
+        <div>
+
+          <h2>Firma Listesi</h2>
+
+          <p id="listInfo">
+            Yükleniyor...
+          </p>
+
+        </div>
+
+        <button
+          class="btn"
+          onclick="loadFirmalar()">
+          ↻ Yenile
+        </button>
+
+      </div>
+
+
+      <div class="table-wrap">
+
+        <table>
+
+          <thead>
+
+            <tr>
+
+              <th>Firma</th>
+              <th>Yetkili</th>
+              <th>Telefon</th>
+              <th>E-posta</th>
+              <th>Vergi No</th>
+              <th>Şehir</th>
+              <th>Durum</th>
+              <th>İşlem</th>
+
+            </tr>
+
+          </thead>
+
+          <tbody id="firmaTable">
+
+            <tr>
+
+              <td
+                colspan="8"
+                class="empty">
+
+                Firmalar yükleniyor...
+
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+  </main>
+
 </div>
 
-<div class="panel" id="formPanel">
 
-<h2>Yeni Firma</h2>
+<!-- FİRMA MODAL -->
 
-<form id="firmaForm">
+<div
+  id="firmaModal"
+  class="modal hidden">
 
-<div class="form-grid">
+  <div class="modal-box">
 
-<div>
-<label>Firma Adı</label>
-<input id="ad" required>
+    <div class="modal-head">
+
+      <div>
+
+        <h2 id="modalTitle">
+          Yeni Firma
+        </h2>
+
+        <p>
+          Firma bilgilerini girin.
+        </p>
+
+      </div>
+
+      <button
+        class="modal-close"
+        onclick="closeFirmaModal()">
+        ×
+      </button>
+
+    </div>
+
+
+    <form
+      id="firmaForm"
+      onsubmit="saveFirma(event)">
+
+      <input
+        type="hidden"
+        id="firmaId">
+
+
+      <div class="form-grid">
+
+        <label class="full">
+
+          Firma Adı *
+
+          <input
+            id="ad"
+            required
+            maxlength="200"
+            placeholder="Firma adı">
+
+        </label>
+
+
+        <label>
+
+          Yetkili Adı
+
+          <input
+            id="yetkili"
+            maxlength="150"
+            placeholder="Yetkili kişi">
+
+        </label>
+
+
+        <label>
+
+          Telefon
+
+          <input
+            id="telefon"
+            type="tel"
+            maxlength="30"
+            placeholder="05xx xxx xx xx">
+
+        </label>
+
+
+        <label>
+
+          E-posta
+
+          <input
+            id="email"
+            type="email"
+            maxlength="150"
+            placeholder="firma@example.com">
+
+        </label>
+
+
+        <label>
+
+          Vergi No
+
+          <input
+            id="vergi_no"
+            maxlength="50"
+            inputmode="numeric"
+            placeholder="Vergi numarası">
+
+        </label>
+
+
+        <label>
+
+          Vergi Dairesi
+
+          <input
+            id="vergi_dairesi"
+            maxlength="150"
+            placeholder="Vergi dairesi">
+
+        </label>
+
+
+        <label>
+
+          İl
+
+          <input
+            id="il"
+            maxlength="100"
+            placeholder="İstanbul">
+
+        </label>
+
+
+        <label>
+
+          İlçe
+
+          <input
+            id="ilce"
+            maxlength="100"
+            placeholder="Üsküdar">
+
+        </label>
+
+
+        <label class="full">
+
+          Adres
+
+          <textarea
+            id="adres"
+            rows="3"
+            maxlength="500"
+            placeholder="Firma adresi"></textarea>
+
+        </label>
+
+
+        <label class="full">
+
+          Not
+
+          <textarea
+            id="notlar"
+            rows="3"
+            maxlength="1000"
+            placeholder="Firma hakkında not"></textarea>
+
+        </label>
+
+
+        <label class="checkbox-field">
+
+          <input
+            id="aktif"
+            type="checkbox"
+            checked>
+
+          <span>
+            Aktif firma
+          </span>
+
+        </label>
+
+      </div>
+
+
+      <div
+        id="formMessage"
+        class="form-message hidden">
+      </div>
+
+
+      <div class="modal-actions">
+
+        <button
+          type="button"
+          class="btn"
+          onclick="closeFirmaModal()">
+          İptal
+        </button>
+
+        <button
+          type="submit"
+          class="btn primary"
+          id="saveButton">
+          Kaydet
+        </button>
+
+      </div>
+
+    </form>
+
+  </div>
+
 </div>
 
-<div>
-<label>Vergi No</label>
-<input id="vergi_no">
-</div>
 
-<div>
-<label>Telefon</label>
-<input id="telefon">
-</div>
+<!-- DETAY MODAL -->
 
-<div>
-<label>E-posta</label>
-<input id="email" type="email">
-</div>
+<div
+  id="detailModal"
+  class="modal hidden">
 
-<div style="grid-column:1/-1">
-<label>Adres</label>
-<textarea id="adres"></textarea>
-</div>
+  <div class="modal-box">
 
-</div>
+    <div class="modal-head">
 
-<div class="actions">
+      <div>
 
-<button class="btn btn-primary" type="submit">
-💾 Firmayı Kaydet
-</button>
+        <h2>Firma Detayı</h2>
 
-<button class="btn" type="button"
-        onclick="hideForm()">
-İptal
-</button>
+        <p id="detailSubtitle"></p>
 
-</div>
+      </div>
 
-</form>
+      <button
+        class="modal-close"
+        onclick="closeDetailModal()">
+        ×
+      </button>
+
+    </div>
+
+
+    <div id="detailContent"></div>
+
+  </div>
 
 </div>
 
-<div class="panel">
 
-<h2>Firmalar</h2>
-
-<table>
-
-<thead>
-<tr>
-<th>ID</th>
-<th>Firma</th>
-<th>Vergi No</th>
-<th>Telefon</th>
-<th>E-posta</th>
-<th>Durum</th>
-</tr>
-</thead>
-
-<tbody id="firmaRows">
-<tr>
-<td colspan="6">Yükleniyor...</td>
-</tr>
-</tbody>
-
-</table>
-
+<div
+  id="toast"
+  class="toast hidden">
 </div>
 
-</main>
 
 <script>
 
-let firmalar=[];
+const API = "/api";
 
-function showForm(){
-  document.getElementById("formPanel").style.display="block";
+let firmalar = [];
+
+
+async function api(endpoint, options = {}) {
+
+  const response =
+    await fetch(
+      API + endpoint,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          ...(options.headers || {})
+        },
+        ...options
+      }
+    );
+
+
+  const data =
+    await response
+      .json()
+      .catch(() => ({}));
+
+
+  if (!response.ok) {
+
+    throw new Error(
+      data.error ||
+      `HTTP ${response.status}`
+    );
+
+  }
+
+
+  return data;
+
 }
 
-function hideForm(){
-  document.getElementById("formPanel").style.display="none";
+
+function escapeHtml(value) {
+
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+
 }
 
-async function loadFirmalar(){
 
-  try{
+function num(value) {
 
-    const r=await fetch("/api/firmalar");
+  return new Intl.NumberFormat(
+    "tr-TR"
+  ).format(
+    Number(value || 0)
+  );
 
-    if(!r.ok) throw new Error("API");
+}
 
-    firmalar=await r.json();
+
+function showToast(
+  message,
+  type = "success"
+) {
+
+  const toast =
+    document.getElementById("toast");
+
+
+  toast.textContent =
+    message;
+
+
+  toast.className =
+    "toast " + type;
+
+
+  setTimeout(() => {
+
+    toast.classList.add("hidden");
+
+  }, 3000);
+
+}
+
+
+async function loadFirmalar() {
+
+  const search =
+    document
+      .getElementById("search")
+      .value
+      .trim();
+
+
+  const tbody =
+    document.getElementById(
+      "firmaTable"
+    );
+
+
+  tbody.innerHTML = `
+
+    <tr>
+
+      <td
+        colspan="8"
+        class="empty">
+
+        Firmalar yükleniyor...
+
+      </td>
+
+    </tr>
+
+  `;
+
+
+  try {
+
+    const endpoint =
+      search
+        ? `/firmalar?search=${encodeURIComponent(search)}`
+        : "/firmalar";
+
+
+    const result =
+      await api(endpoint);
+
+
+    firmalar =
+      result.data ||
+      result ||
+      [];
+
 
     renderFirmalar();
 
-  }catch(e){
+  } catch (error) {
 
-    document.getElementById("firmaRows").innerHTML=
-      '<tr><td colspan="6">Firmalar yüklenemedi.</td></tr>';
+    console.error(error);
+
+
+    tbody.innerHTML = `
+
+      <tr>
+
+        <td
+          colspan="8"
+          class="empty danger-text">
+
+          ${escapeHtml(error.message)}
+
+        </td>
+
+      </tr>
+
+    `;
 
   }
 
 }
 
-function renderFirmalar(){
 
-  const rows=document.getElementById("firmaRows");
+function renderFirmalar() {
 
-  if(!firmalar.length){
+  const tbody =
+    document.getElementById(
+      "firmaTable"
+    );
 
-    rows.innerHTML=
-      '<tr><td colspan="6">Henüz firma bulunmuyor.</td></tr>';
+
+  const active =
+    firmalar.filter(
+      f => Number(f.aktif) === 1
+    );
+
+
+  document.getElementById(
+    "totalCount"
+  ).textContent =
+    num(firmalar.length);
+
+
+  document.getElementById(
+    "activeCount"
+  ).textContent =
+    num(active.length);
+
+
+  document.getElementById(
+    "productCount"
+  ).textContent =
+    num(
+      firmalar.reduce(
+        (sum, f) =>
+          sum +
+          Number(
+            f.urun_sayisi ||
+            f.product_count ||
+            0
+          ),
+        0
+      )
+    );
+
+
+  document.getElementById(
+    "contactCount"
+  ).textContent =
+    num(
+      firmalar.filter(
+        f =>
+          f.yetkili &&
+          String(f.yetkili).trim()
+      ).length
+    );
+
+
+  document.getElementById(
+    "listInfo"
+  ).textContent =
+    `${num(firmalar.length)} firma gösteriliyor`;
+
+
+  if (!firmalar.length) {
+
+    tbody.innerHTML = `
+
+      <tr>
+
+        <td
+          colspan="8"
+          class="empty">
+
+          Firma bulunamadı.
+
+        </td>
+
+      </tr>
+
+    `;
 
     return;
+
   }
 
-  rows.innerHTML=firmalar.map(f=>`
 
-    <tr>
-      <td>${f.id}</td>
-      <td>${esc(f.ad)}</td>
-      <td>${esc(f.vergi_no||"-")}</td>
-      <td>${esc(f.telefon||"-")}</td>
-      <td>${esc(f.email||"-")}</td>
-      <td><span class="badge">Aktif</span></td>
-    </tr>
+  tbody.innerHTML =
+    firmalar
+      .map(firma => `
 
-  `).join("");
+        <tr>
+
+          <td>
+
+            <div class="cell-main">
+
+              <strong>
+                ${escapeHtml(
+                  firma.ad
+                )}
+              </strong>
+
+            </div>
+
+            ${
+              firma.kodu
+                ? `
+                  <small>
+                    ${escapeHtml(
+                      firma.kodu
+                    )}
+                  </small>
+                `
+                : ""
+            }
+
+          </td>
+
+
+          <td>
+            ${escapeHtml(
+              firma.yetkili || "-"
+            )}
+          </td>
+
+
+          <td>
+
+            ${
+              firma.telefon
+                ? `
+                  <a
+                    href="tel:${escapeHtml(
+                      firma.telefon
+                    )}">
+
+                    ${escapeHtml(
+                      firma.telefon
+                    )}
+
+                  </a>
+                `
+                : "-"
+            }
+
+          </td>
+
+
+          <td>
+
+            ${
+              firma.email
+                ? `
+                  <a
+                    href="mailto:${escapeHtml(
+                      firma.email
+                    )}">
+
+                    ${escapeHtml(
+                      firma.email
+                    )}
+
+                  </a>
+                `
+                : "-"
+            }
+
+          </td>
+
+
+          <td>
+            ${escapeHtml(
+              firma.vergi_no || "-"
+            )}
+          </td>
+
+
+          <td>
+
+            ${
+              firma.il
+                ? `${escapeHtml(firma.il)}
+                    ${
+                      firma.ilce
+                        ? ` / ${escapeHtml(firma.ilce)}`
+                        : ""
+                    }`
+                : "-"
+            }
+
+          </td>
+
+
+          <td>
+
+            ${
+              Number(firma.aktif) === 1
+                ? `
+                  <span class="badge success">
+                    Aktif
+                  </span>
+                `
+                : `
+                  <span class="badge danger">
+                    Pasif
+                  </span>
+                `
+            }
+
+          </td>
+
+
+          <td>
+
+            <div class="row-actions">
+
+              <button
+                class="small-btn"
+                onclick="showDetail(${firma.id})">
+                Gör
+              </button>
+
+              <button
+                class="small-btn"
+                onclick="editFirma(${firma.id})">
+                Düzenle
+              </button>
+
+              ${
+                Number(firma.aktif) === 1
+                  ? `
+                    <button
+                      class="small-btn danger-btn"
+                      onclick="deactivateFirma(${firma.id})">
+                      Pasifleştir
+                    </button>
+                  `
+                  : `
+                    <button
+                      class="small-btn"
+                      onclick="activateFirma(${firma.id})">
+                      Aktifleştir
+                    </button>
+                  `
+              }
+
+            </div>
+
+          </td>
+
+        </tr>
+
+      `)
+      .join("");
 
 }
 
-document.getElementById("firmaForm")
-.addEventListener("submit",async function(e){
 
-  e.preventDefault();
+function clearSearch() {
 
-  const body={
-    ad:document.getElementById("ad").value.trim(),
-    vergi_no:document.getElementById("vergi_no").value.trim(),
-    telefon:document.getElementById("telefon").value.trim(),
-    email:document.getElementById("email").value.trim(),
-    adres:document.getElementById("adres").value.trim()
-  };
+  document.getElementById(
+    "search"
+  ).value = "";
 
-  try{
+  loadFirmalar();
 
-    const r=await fetch("/api/firmalar",{
-      method:"POST",
-      headers:{
-        "content-type":"application/json"
-      },
-      body:JSON.stringify(body)
-    });
+}
 
-    const data=await r.json();
 
-    if(!r.ok){
+function resetForm() {
 
-      alert("❌ "+(data.error||"Firma kaydedilemedi."));
-      return;
+  document
+    .getElementById("firmaForm")
+    .reset();
+
+
+  document
+    .getElementById("firmaId")
+    .value = "";
+
+
+  document
+    .getElementById("modalTitle")
+    .textContent = "Yeni Firma";
+
+
+  document
+    .getElementById("aktif")
+    .checked = true;
+
+
+  document
+    .getElementById("formMessage")
+    .classList.add("hidden");
+
+}
+
+
+function openFirmaModal(
+  firma = null
+) {
+
+  resetForm();
+
+
+  document
+    .getElementById("firmaModal")
+    .classList.remove(
+      "hidden"
+    );
+
+
+  if (!firma) return;
+
+
+  document
+    .getElementById("modalTitle")
+    .textContent =
+      "Firma Düzenle";
+
+
+  document
+    .getElementById("firmaId")
+    .value =
+      firma.id || "";
+
+
+  document
+    .getElementById("ad")
+    .value =
+      firma.ad || "";
+
+
+  document
+    .getElementById("yetkili")
+    .value =
+      firma.yetkili || "";
+
+
+  document
+    .getElementById("telefon")
+    .value =
+      firma.telefon || "";
+
+
+  document
+    .getElementById("email")
+    .value =
+      firma.email || "";
+
+
+  document
+    .getElementById("vergi_no")
+    .value =
+      firma.vergi_no || "";
+
+
+  document
+    .getElementById("vergi_dairesi")
+    .value =
+      firma.vergi_dairesi || "";
+
+
+  document
+    .getElementById("il")
+    .value =
+      firma.il || "";
+
+
+  document
+    .getElementById("ilce")
+    .value =
+      firma.ilce || "";
+
+
+  document
+    .getElementById("adres")
+    .value =
+      firma.adres || "";
+
+
+  document
+    .getElementById("notlar")
+    .value =
+      firma.notlar || "";
+
+
+  document
+    .getElementById("aktif")
+    .checked =
+      Number(firma.aktif) === 1;
+
+}
+
+
+function closeFirmaModal() {
+
+  document
+    .getElementById("firmaModal")
+    .classList.add(
+      "hidden"
+    );
+
+}
+
+
+async function saveFirma(event) {
+
+  event.preventDefault();
+
+
+  const button =
+    document.getElementById(
+      "saveButton"
+    );
+
+
+  const message =
+    document.getElementById(
+      "formMessage"
+    );
+
+
+  button.disabled = true;
+
+  button.textContent =
+    "Kaydediliyor...";
+
+
+  message.classList.add(
+    "hidden"
+  );
+
+
+  try {
+
+    const id =
+      document.getElementById(
+        "firmaId"
+      ).value;
+
+
+    const ad =
+      document
+        .getElementById("ad")
+        .value
+        .trim();
+
+
+    if (!ad) {
+
+      throw new Error(
+        "Firma adı zorunludur."
+      );
 
     }
 
-    alert("✅ Firma başarıyla kaydedildi.");
 
-    document.getElementById("firmaForm").reset();
+    const data = {
 
-    hideForm();
+      ad,
 
-    loadFirmalar();
+      yetkili:
+        document
+          .getElementById("yetkili")
+          .value
+          .trim(),
 
-  }catch(e){
+      telefon:
+        document
+          .getElementById("telefon")
+          .value
+          .trim(),
 
-    alert("❌ Sunucu bağlantısı kurulamadı.");
+      email:
+        document
+          .getElementById("email")
+          .value
+          .trim(),
+
+      vergi_no:
+        document
+          .getElementById("vergi_no")
+          .value
+          .trim(),
+
+      vergi_dairesi:
+        document
+          .getElementById("vergi_dairesi")
+          .value
+          .trim(),
+
+      il:
+        document
+          .getElementById("il")
+          .value
+          .trim(),
+
+      ilce:
+        document
+          .getElementById("ilce")
+          .value
+          .trim(),
+
+      adres:
+        document
+          .getElementById("adres")
+          .value
+          .trim(),
+
+      notlar:
+        document
+          .getElementById("notlar")
+          .value
+          .trim(),
+
+      aktif:
+        document
+          .getElementById("aktif")
+          .checked
+            ? 1
+            : 0
+
+    };
+
+
+    if (id) {
+
+      await api(
+        `/firmalar/${id}`,
+        {
+          method: "PUT",
+          body: JSON.stringify(data)
+        }
+      );
+
+
+      showToast(
+        "Firma güncellendi."
+      );
+
+    } else {
+
+      await api(
+        "/firmalar",
+        {
+          method: "POST",
+          body: JSON.stringify(data)
+        }
+      );
+
+
+      showToast(
+        "Firma oluşturuldu."
+      );
+
+    }
+
+
+    closeFirmaModal();
+
+    await loadFirmalar();
+
+
+  } catch (error) {
+
+    console.error(error);
+
+
+    message.textContent =
+      error.message;
+
+
+    message.classList.remove(
+      "hidden"
+    );
+
+  } finally {
+
+    button.disabled = false;
+
+    button.textContent =
+      "Kaydet";
 
   }
 
-});
+}
 
-function esc(v){
 
-  return String(v??"")
-    .replace(/[&<>"']/g,m=>({
-      "&":"&amp;",
-      "<":"&lt;",
-      ">":"&gt;",
-      '"':"&quot;",
-      "'":"&#39;"
-    }[m]));
+async function editFirma(id) {
+
+  try {
+
+    const result =
+      await api(
+        `/firmalar/${id}`
+      );
+
+
+    const firma =
+      result.data ||
+      result;
+
+
+    openFirmaModal(
+      firma
+    );
+
+
+  } catch (error) {
+
+    showToast(
+      error.message,
+      "error"
+    );
+
+  }
 
 }
 
-loadFirmalar();
+
+async function deactivateFirma(id) {
+
+  const firma =
+    firmalar.find(
+      f =>
+        Number(f.id) ===
+        Number(id)
+    );
+
+
+  if (!firma) return;
+
+
+  const confirmed =
+    confirm(
+      `"${firma.ad}" firmasını pasifleştirmek istiyor musunuz?`
+    );
+
+
+  if (!confirmed) return;
+
+
+  try {
+
+    await api(
+      `/firmalar/${id}`,
+      {
+        method: "PUT",
+        body: JSON.stringify({
+          aktif: 0
+        })
+      }
+    );
+
+
+    showToast(
+      "Firma pasifleştirildi."
+    );
+
+
+    await loadFirmalar();
+
+
+  } catch (error) {
+
+    showToast(
+      error.message,
+      "error"
+    );
+
+  }
+
+}
+
+
+async function activateFirma(id) {
+
+  try {
+
+    await api(
+      `/firmalar/${id}`,
+      {
+        method: "PUT",
+        body: JSON.stringify({
+          aktif: 1
+        })
+      }
+    );
+
+
+    showToast(
+      "Firma aktifleştirildi."
+    );
+
+
+    await loadFirmalar();
+
+
+  } catch (error) {
+
+    showToast(
+      error.message,
+      "error"
+    );
+
+  }
+
+}
+
+
+function showDetail(id) {
+
+  const firma =
+    firmalar.find(
+      f =>
+        Number(f.id) ===
+        Number(id)
+    );
+
+
+  if (!firma) return;
+
+
+  document
+    .getElementById(
+      "detailSubtitle"
+    )
+    .textContent =
+      firma.ad || "";
+
+
+  document
+    .getElementById(
+      "detailContent"
+    )
+    .innerHTML = `
+
+      <div class="detail-grid">
+
+        <div>
+          <span>Firma</span>
+          <strong>
+            ${escapeHtml(
+              firma.ad || "-"
+            )}
+          </strong>
+        </div>
+
+
+        <div>
+          <span>Yetkili</span>
+          <strong>
+            ${escapeHtml(
+              firma.yetkili || "-"
+            )}
+          </strong>
+        </div>
+
+
+        <div>
+          <span>Telefon</span>
+          <strong>
+            ${escapeHtml(
+              firma.telefon || "-"
+            )}
+          </strong>
+        </div>
+
+
+        <div>
+          <span>E-posta</span>
+          <strong>
+            ${escapeHtml(
+              firma.email || "-"
+            )}
+          </strong>
+        </div>
+
+
+        <div>
+          <span>Vergi No</span>
+          <strong>
+            ${escapeHtml(
+              firma.vergi_no || "-"
+            )}
+          </strong>
+        </div>
+
+
+        <div>
+          <span>Vergi Dairesi</span>
+          <strong>
+            ${escapeHtml(
+              firma.vergi_dairesi || "-"
+            )}
+          </strong>
+        </div>
+
+
+        <div>
+          <span>İl</span>
+          <strong>
+            ${escapeHtml(
+              firma.il || "-"
+            )}
+          </strong>
+        </div>
+
+
+        <div>
+          <span>İlçe</span>
+          <strong>
+            ${escapeHtml(
+              firma.ilce || "-"
+            )}
+          </strong>
+        </div>
+
+
+        <div class="full-detail">
+
+          <span>Adres</span>
+
+          <strong>
+            ${escapeHtml(
+              firma.adres || "-"
+            )}
+          </strong>
+
+        </div>
+
+
+        <div class="full-detail">
+
+          <span>Notlar</span>
+
+          <strong>
+            ${escapeHtml(
+              firma.notlar || "-"
+            )}
+          </strong>
+
+        </div>
+
+
+        <div>
+
+          <span>Durum</span>
+
+          <strong>
+
+            ${
+              Number(firma.aktif) === 1
+                ? "Aktif"
+                : "Pasif"
+            }
+
+          </strong>
+
+        </div>
+
+      </div>
+
+    `;
+
+
+  document
+    .getElementById(
+      "detailModal"
+    )
+    .classList.remove(
+      "hidden"
+    );
+
+}
+
+
+function closeDetailModal() {
+
+  document
+    .getElementById(
+      "detailModal"
+    )
+    .classList.add(
+      "hidden"
+    );
+
+}
+
+
+document
+  .getElementById("search")
+  .addEventListener(
+    "keydown",
+    event => {
+
+      if (
+        event.key === "Enter"
+      ) {
+
+        loadFirmalar();
+
+      }
+
+    }
+  );
+
+
+document.addEventListener(
+  "click",
+  event => {
+
+    if (
+      event.target.id ===
+      "firmaModal"
+    ) {
+
+      closeFirmaModal();
+
+    }
+
+
+    if (
+      event.target.id ===
+      "detailModal"
+    ) {
+
+      closeDetailModal();
+
+    }
+
+  }
+);
+
+
+document.addEventListener(
+  "DOMContentLoaded",
+  () => {
+
+    loadFirmalar();
+
+  }
+);
 
 </script>
 
