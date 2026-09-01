@@ -1,1 +1,754 @@
+<!DOCTYPE html><html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Mal Kabul | SKT Stok & Cari Takip</title>  <style>
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Arial,Helvetica,sans-serif;
+      background:#f4f6f8;
+      color:#1f2937;
+    }
+    header{
+      background:#07111f;
+      color:#fff;
+      padding:18px;
+    }
+    header h1{
+      margin:0;
+      font-size:22px;
+    }
+    header p{
+      margin:5px 0 0;
+      opacity:.75;
+      font-size:13px;
+    }
+    main{
+      max-width:1200px;
+      margin:20px auto;
+      padding:0 15px;
+    }
+    .card{
+      background:#fff;
+      border-radius:12px;
+      padding:18px;
+      margin-bottom:16px;
+      box-shadow:0 2px 10px rgba(0,0,0,.06);
+    }
+    h2{
+      margin-top:0;
+      font-size:18px;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:12px;
+    }
+    label{
+      display:block;
+      font-size:13px;
+      font-weight:600;
+      margin-bottom:5px;
+    }
+    input,select,button{
+      width:100%;
+      min-height:42px;
+      border:1px solid #d1d5db;
+      border-radius:8px;
+      padding:9px 11px;
+      font-size:14px;
+    }
+    button{
+      cursor:pointer;
+      background:#111827;
+      color:#fff;
+      border:0;
+      font-weight:600;
+    }
+    button:hover{opacity:.9}
+    .btn-add{margin-top:21px}
+    .btn-save{
+      background:#166534;
+      max-width:220px;
+    }
+    .btn-danger{
+      background:#991b1b;
+      width:auto;
+      min-height:34px;
+    }
+    .total{
+      font-size:20px;
+      font-weight:700;
+      text-align:right;
+      margin:15px 0;
+    }
+    .table-wrap{
+      overflow-x:auto;
+    }
+    table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:850px;
+    }
+    th,td{
+      border-bottom:1px solid #e5e7eb;
+      padding:10px 8px;
+      text-align:left;
+      font-size:13px;
+    }
+    th{
+      background:#f9fafb;
+    }
+    .message{
+      padding:12px;
+      border-radius:8px;
+      margin-bottom:15px;
+      display:none;
+    }
+    .success{
+      display:block;
+      background:#dcfce7;
+      color:#166534;
+    }
+    .error{
+      display:block;
+      background:#fee2e2;
+      color:#991b1b;
+    }
+    .empty{
+      text-align:center;
+      padding:25px;
+      color:#6b7280;
+    }
+    @media(max-width:850px){
+      .grid{
+        grid-template-columns:repeat(2,1fr);
+      }
+    }
+    @media(max-width:550px){
+      .grid{
+        grid-template-columns:1fr;
+      }
+      .card{
+        padding:13px;
+      }
+    }
+  </style></head><body><header>
+  <h1>📦 Mal Kabul</h1>
+  <p>Satın alma siparişlerini teslim al ve stoğa işle</p>
+</header><main>  <div id="message" class="message"></div>  <!-- SATIN ALMA SİPARİŞİ -->  <section class="card">
+    <h2>Satın Alma Siparişi Seç</h2><div class="grid">
+  <div>
+    <label for="siparisSelect">Sipariş</label>
+    <select id="siparisSelect">
+      <option value="">Sipariş seçiniz</option>
+    </select>
+  </div>
 
+  <div>
+    <label>Firma</label>
+    <input id="firma" readonly>
+  </div>
+
+  <div>
+    <label>Şube</label>
+    <input id="sube" readonly>
+  </div>
+
+  <div>
+    <label>Cari</label>
+    <input id="cari" readonly>
+  </div>
+</div>
+
+  </section>  <!-- SİPARİŞ DETAYLARI -->  <section class="card">
+    <h2>Sipariş Ürünleri</h2><div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Ürün</th>
+        <th>Kod</th>
+        <th>Sipariş</th>
+        <th>Birim</th>
+        <th>Birim Fiyat</th>
+        <th>Kabul</th>
+        <th>SKT</th>
+        <th>İşlem</th>
+      </tr>
+    </thead>
+
+    <tbody id="detayBody">
+      <tr>
+        <td colspan="8" class="empty">
+          Önce satın alma siparişi seçiniz.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="total">
+  Kabul Toplamı:
+  <span id="toplam">0.00</span> TL
+</div>
+
+<button
+  id="kaydetBtn"
+  class="btn-save"
+  onclick="malKabulKaydet()"
+  disabled>
+  MAL KABULÜ TAMAMLA
+</button>
+
+  </section>  <!-- YENİ PARTİ -->  <section class="card">
+    <h2>Parti / SKT Bilgisi</h2><p style="font-size:13px;color:#6b7280">
+  Ürün satırında kabul miktarı girildiğinde parti ve son kullanma
+  tarihi bilgileri kullanılacaktır.
+</p>
+
+  </section></main><script>
+
+const API = "/api";
+
+let siparisler = [];
+let seciliSiparis = null;
+let kabulSatirlari = [];
+
+
+/* =========================
+   YARDIMCI
+========================= */
+
+function $(id){
+  return document.getElementById(id);
+}
+
+function mesaj(text,type="success"){
+
+  const el = $("message");
+
+  el.textContent = text;
+  el.className = "message " + type;
+
+  setTimeout(()=>{
+    el.className = "message";
+  },5000);
+}
+
+
+function para(value){
+
+  const n = Number(value || 0);
+
+  return n.toLocaleString("tr-TR",{
+    minimumFractionDigits:2,
+    maximumFractionDigits:2
+  });
+}
+
+
+/* =========================
+   SİPARİŞLERİ GETİR
+========================= */
+
+async function siparisleriYukle(){
+
+  try{
+
+    const res =
+      await fetch(`${API}/satin-alma`);
+
+    const json =
+      await res.json();
+
+    if(!json.ok){
+      throw new Error(
+        json.error || "Siparişler alınamadı."
+      );
+    }
+
+    siparisler =
+      Array.isArray(json.data)
+        ? json.data
+        : [];
+
+    const select =
+      $("siparisSelect");
+
+    select.innerHTML =
+      `<option value="">Sipariş seçiniz</option>`;
+
+    siparisler.forEach(s=>{
+
+      const option =
+        document.createElement("option");
+
+      option.value = s.id;
+
+      option.textContent =
+        `${s.siparis_no || "SA-"+s.id} — ${s.firma_adi || ""} — ${s.durum || ""}`;
+
+      select.appendChild(option);
+
+    });
+
+  }catch(error){
+
+    mesaj(
+      error.message ||
+      "Siparişler yüklenemedi.",
+      "error"
+    );
+  }
+}
+
+
+/* =========================
+   SİPARİŞ SEÇ
+========================= */
+
+$("siparisSelect")
+.addEventListener("change",async function(){
+
+  const id =
+    Number(this.value);
+
+  if(!id){
+
+    seciliSiparis = null;
+
+    $("firma").value = "";
+    $("sube").value = "";
+    $("cari").value = "";
+
+    $("detayBody").innerHTML =
+      `<tr>
+        <td colspan="8" class="empty">
+          Önce satın alma siparişi seçiniz.
+        </td>
+      </tr>`;
+
+    $("kaydetBtn").disabled = true;
+
+    return;
+  }
+
+  await siparisGetir(id);
+
+});
+
+
+/* =========================
+   SİPARİŞ DETAY
+========================= */
+
+async function siparisGetir(id){
+
+  try{
+
+    const res =
+      await fetch(`${API}/satin-alma/${id}`);
+
+    const json =
+      await res.json();
+
+    if(!json.ok){
+      throw new Error(
+        json.error ||
+        "Sipariş alınamadı."
+      );
+    }
+
+    seciliSiparis =
+      json.data;
+
+    $("firma").value =
+      seciliSiparis.firma_adi || "";
+
+    $("sube").value =
+      seciliSiparis.sube_adi || "";
+
+    $("cari").value =
+      seciliSiparis.cari_adi || "";
+
+    kabulSatirlari =
+      (seciliSiparis.detaylar || [])
+      .map(d=>({
+
+        detay_id:d.id,
+
+        urun_id:d.urun_id,
+
+        urun_adi:d.urun_adi,
+
+        urun_kodu:d.urun_kodu,
+
+        miktar:Number(d.miktar || 0),
+
+        birim_fiyat:Number(
+          d.birim_fiyat || 0
+        ),
+
+        kabul:Number(
+          d.miktar || 0
+        ),
+
+        skt:""
+
+      }));
+
+    detaylariCiz();
+
+  }catch(error){
+
+    mesaj(
+      error.message ||
+      "Sipariş detayı alınamadı.",
+      "error"
+    );
+  }
+}
+
+
+/* =========================
+   DETAY TABLOSU
+========================= */
+
+function detaylariCiz(){
+
+  const body =
+    $("detayBody");
+
+  body.innerHTML = "";
+
+  if(!kabulSatirlari.length){
+
+    body.innerHTML =
+      `<tr>
+        <td colspan="8" class="empty">
+          Siparişte ürün bulunamadı.
+        </td>
+      </tr>`;
+
+    $("kaydetBtn").disabled = true;
+
+    return;
+  }
+
+  kabulSatirlari.forEach(
+    (item,index)=>{
+
+      const tr =
+        document.createElement("tr");
+
+      tr.innerHTML = `
+
+        <td>${escapeHtml(item.urun_adi || "")}</td>
+
+        <td>${escapeHtml(item.urun_kodu || "")}</td>
+
+        <td>${item.miktar}</td>
+
+        <td>${escapeHtml(
+          seciliSiparis?.detaylar?.[index]?.birim_sembol || ""
+        )}</td>
+
+        <td>${para(item.birim_fiyat)}</td>
+
+        <td>
+          <input
+            type="number"
+            min="0"
+            max="${item.miktar}"
+            step="0.001"
+            value="${item.kabul}"
+            onchange="kabulDegistir(${index},this.value)">
+        </td>
+
+        <td>
+          <input
+            type="date"
+            value="${item.skt}"
+            onchange="sktDegistir(${index},this.value)">
+        </td>
+
+        <td>
+          <button
+            class="btn-danger"
+            onclick="satirSil(${index})">
+            Sil
+          </button>
+        </td>
+
+      `;
+
+      body.appendChild(tr);
+
+    }
+  );
+
+  $("kaydetBtn").disabled = false;
+
+  toplamHesapla();
+}
+
+
+/* =========================
+   KABUL MİKTARI
+========================= */
+
+function kabulDegistir(index,value){
+
+  let n =
+    Number(value);
+
+  if(!Number.isFinite(n) || n < 0){
+    n = 0;
+  }
+
+  if(n > kabulSatirlari[index].miktar){
+    n =
+      kabulSatirlari[index].miktar;
+  }
+
+  kabulSatirlari[index].kabul = n;
+
+  toplamHesapla();
+}
+
+
+function sktDegistir(index,value){
+
+  kabulSatirlari[index].skt =
+    value || "";
+}
+
+
+/* =========================
+   SATIR SİL
+========================= */
+
+function satirSil(index){
+
+  kabulSatirlari.splice(
+    index,
+    1
+  );
+
+  detaylariCiz();
+}
+
+
+/* =========================
+   TOPLAM
+========================= */
+
+function toplamHesapla(){
+
+  let toplam = 0;
+
+  kabulSatirlari.forEach(item=>{
+
+    toplam +=
+      Number(item.kabul || 0) *
+      Number(item.birim_fiyat || 0);
+
+  });
+
+  $("toplam").textContent =
+    para(toplam);
+}
+
+
+/* =========================
+   MAL KABUL
+========================= */
+
+async function malKabulKaydet(){
+
+  if(!seciliSiparis){
+
+    mesaj(
+      "Önce satın alma siparişi seçiniz.",
+      "error"
+    );
+
+    return;
+  }
+
+  const satirlar =
+    kabulSatirlari.filter(
+      item => Number(item.kabul) > 0
+    );
+
+  if(!satirlar.length){
+
+    mesaj(
+      "Kabul edilecek en az bir ürün olmalıdır.",
+      "error"
+    );
+
+    return;
+  }
+
+  const eksikSkt =
+    satirlar.some(
+      item => !item.skt
+    );
+
+  if(eksikSkt){
+
+    mesaj(
+      "Kabul edilen tüm ürünler için SKT giriniz.",
+      "error"
+    );
+
+    return;
+  }
+
+  const btn =
+    $("kaydetBtn");
+
+  btn.disabled = true;
+  btn.textContent = "KAYDEDİLİYOR...";
+
+  try{
+
+    /*
+      Bu endpoint worker.js içinde
+      mal kabul route'u hazır olduğunda
+      kullanılacaktır.
+    */
+
+    const payload = {
+
+      satin_alma_id:
+        seciliSiparis.id,
+
+      firma_id:
+        seciliSiparis.firma_id,
+
+      sube_id:
+        seciliSiparis.sube_id,
+
+      cari_id:
+        seciliSiparis.cari_id || null,
+
+      detaylar:
+        satirlar.map(item=>({
+
+          detay_id:
+            item.detay_id,
+
+          urun_id:
+            item.urun_id,
+
+          miktar:
+            item.kabul,
+
+          birim_fiyat:
+            item.birim_fiyat,
+
+          son_kullanma_tarihi:
+            item.skt
+
+        }))
+
+    };
+
+
+    const res =
+      await fetch(
+        `${API}/mal-kabul`,
+        {
+          method:"POST",
+
+          headers:{
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify(payload)
+        }
+      );
+
+    const json =
+      await res.json();
+
+    if(!json.ok){
+
+      throw new Error(
+        json.error ||
+        "Mal kabul işlemi başarısız."
+      );
+
+    }
+
+    mesaj(
+      "Mal kabul işlemi başarıyla tamamlandı."
+    );
+
+    seciliSiparis = null;
+
+    $("siparisSelect").value = "";
+
+    $("firma").value = "";
+    $("sube").value = "";
+    $("cari").value = "";
+
+    $("detayBody").innerHTML =
+      `<tr>
+        <td colspan="8" class="empty">
+          Mal kabul tamamlandı.
+        </td>
+      </tr>`;
+
+    $("toplam").textContent =
+      "0.00";
+
+    await siparisleriYukle();
+
+  }catch(error){
+
+    mesaj(
+      error.message ||
+      "Mal kabul işlemi başarısız.",
+      "error"
+    );
+
+  }finally{
+
+    btn.disabled = false;
+    btn.textContent =
+      "MAL KABULÜ TAMAMLA";
+
+  }
+}
+
+
+/* =========================
+   HTML GÜVENLİĞİ
+========================= */
+
+function escapeHtml(value){
+
+  return String(value ?? "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+
+}
+
+
+/* =========================
+   BAŞLAT
+========================= */
+
+siparisleriYukle();
+
+</script></body>
+</html>
