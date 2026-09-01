@@ -365,7 +365,56 @@ async function dashboard(DB) {
     }
   });
 }
+/* =====================================================
+     12 - MAL KABUL ROUTES
+     ===================================================== */
 
+  if (
+    path === "/api/mal-kabuller" &&
+    method === "GET"
+  ) {
+    return listMalKabuller(
+      DB,
+      request
+    );
+  }
+
+  if (
+    path === "/api/mal-kabuller" &&
+    method === "POST"
+  ) {
+    const body =
+      await readBody(request);
+
+    return createMalKabul(
+      DB,
+      body
+    );
+  }
+
+  const malKabulMatch =
+    path.match(
+      /^\/api\/mal-kabuller\/(\d+)$/
+    );
+
+  if (malKabulMatch) {
+
+    const id =
+      Number(malKabulMatch[1]);
+
+    if (!validId(id)) {
+      return fail(
+        "Geçersiz mal kabul ID."
+      );
+    }
+
+    if (method === "GET") {
+      return getMalKabul(
+        DB,
+        id
+      );
+    }
+  }
 
 /* =========================================================
    GENEL TABLO İŞLEMLERİ
