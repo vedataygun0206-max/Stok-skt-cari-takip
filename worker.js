@@ -1916,7 +1916,510 @@ async function deleteSatinAlma(DB, id) {
   return ok();
 }
 
+/* =========================================================
+   12 - MAL KABUL
+   ========================================================= */
 
+async function listMalKabuller(DB, request) {
+
+  const url = new URL(request.url);
+
+  const search =
+    text(url.searchParams.get("search"));
+
+  let sql = `
+    SELECT
+      m.*,
+      f.ad AS firma_adi,
+      s.ad AS sube_adi,
+      d.ad AS depo_adi,
+      c.ad AS cari_adi
+    FROM mal_kabuller m
+    JOIN firmalar f
+      ON f.id = m.firma_id
+    JOIN subeler s
+      ON s.id = m.sube_id
+    JOIN depolar d
+      ON d.id = m.depo_id
+    LEFT JOIN cariler c
+      ON c.id = m.cari_id
+  `;
+
+  const params = [];
+
+  if (search) {
+
+    sql += `
+      WHERE
+        m.kabul_no LIKE ?
+        OR m.fatura_no LIKE ?
+        OR f.ad LIKE ?
+        OR s.ad LIKE ?
+        OR d.ad LIKE ?
+        OR c.ad LIKE ?
+    `;
+
+    const q = `%${search}%`;
+
+    params.push(
+      q,
+      q,
+      q,
+      q,
+      q,
+      q
+    );
+  }
+
+  sql += `
+    ORDER BY m.id DESC
+  `;
+
+  const result =
+    await DB.prepare(sql)
+      .bind(...params)
+      .all();
+
+  return ok({
+    data: result.results || []
+  });
+}
+
+
+async function getMalKabul(DB, id) {
+
+  const kabul =
+    await DB.prepare(`
+      SELECT
+        m.*,
+        f.ad AS firma_adi,
+        s.ad AS sube_adi,
+        d.ad AS depo_adi,
+        c.ad AS cari_adi
+      FROM mal_kabuller m
+      JOIN firmalar f
+        ON f.id = m.firma_id
+      JOIN subeler s
+        ON s.id = m.sube_id
+      JOIN depolar d
+        ON d.id = m.depo_id
+      LEFT JOIN cariler c
+        ON c.id = m.cari_id
+      WHERE m.id = ?
+    `)
+    .bind(id)
+    .first();
+
+  if (!kabul) {
+    return fail(
+      "Mal kabul kaydı bulunamadı.",
+      404
+    );
+  }
+
+  const detaylar =
+    await DB.prepare(`
+      SELECT
+        d.*,
+        u.ad AS urun_adi,
+        u.urun_kodu,
+        b.ad AS birim_adi,
+        b.sembol AS birim_sembol
+      FROM mal_kabul_detaylari d
+      JOIN urunler u
+        ON u.id = d.urun_id
+      LEFT JOIN birimler b
+        ON b.id = u.birim_id
+      WHERE d.kabul_id = ?
+      ORDER BY d.id
+    `)
+    .bind(id)
+    .all();
+
+  return ok({
+    data: {
+      ...kabul,
+      detaylar:
+        detaylar.results || []
+    }
+  });
+}
+
+
+async function createMalKabul(DB, body) {
+
+  const firmaId =
+    number(body.firma_id);
+
+  const subeId =
+    number(body.sube_id);
+
+  const depoId =
+    number(body.depo_id);
+
+  const cariId =
+    validId(body.cari_id)
+      ? Number(body.cari_id)
+      : null;
+
+  if (!validId(firmaId)) {
+    return fail(
+      "Firma seçimi zorunludur."
+    );
+  }
+
+  if (!validId(subeId)) {
+    return fail(
+      "Şube seçimi zorunludur."
+    );
+  }
+
+  if (!validId(depoId)) {
+    return fail(
+      "Depo seçimi zorunludur."
+    );
+  }
+
+  /* -------------------------------------------------------
+     FİRMA KONTROLÜ
+     ------------------------------------------------------- */
+
+  const firma =
+    await DB.prepare(`
+      SELECT id
+      FROM firmalar
+      WHERE id = ?
+        AND aktif = 1
+    `)
+    .bind(firmaId)
+    .first();
+
+  if (!firma) {
+    return fail(
+      "Firma bulunamadı.",
+      404
+    );
+  }
+
+  /* -------------------------------------------------------
+     ŞUBE KONTROLÜ
+     ------------------------------------------------------- */
+
+  const sube =
+    await DB.prepare(`
+      SELECT id
+      FROM subeler
+      WHERE id = ?
+        AND firma_id = ?
+        AND aktif = 1
+    `)
+    .bind(
+      subeId,
+      firmaId
+    )
+    .first();
+
+  if (!sube) {
+    return fail(
+      "Şube firmaya ait değil.",
+      400
+    );
+  }
+
+  /* -------------------------------------------------------
+     DEPO KONTROLÜ
+     ------------------------------------------------------- */
+
+  const depo =
+    await DB.prepare(`
+      SELECT
+        id,
+        sube_id
+      FROM depolar
+      WHERE id = ?
+        AND sube_id = ?
+        AND aktif = 1
+    `)
+    .bind(
+      depoId,
+      subeId
+    )
+    .first();
+
+  if (!depo) {
+    return fail(
+      "Depo seçilen şubeye ait değil.",
+      400
+    );
+  }
+
+  /* -------------------------------------------------------
+     CARİ KONTROLÜ
+     ------------------------------------------------------- */
+
+  if (cariId) {
+
+    const cari =
+      await DB.prepare(`
+        SELECT id
+        FROM cariler
+        WHERE id = ?
+          AND aktif = 1
+      `)
+      .bind(cariId)
+      .first();
+
+    if (!cari) {
+      return fail(
+        "Cari bulunamadı.",
+        404
+      );
+    }
+  }
+
+  /* -------------------------------------------------------
+     DETAYLAR
+     ------------------------------------------------------- */
+
+  const detaylar =
+    Array.isArray(body.detaylar)
+      ? body.detaylar
+      : [];
+
+  if (!detaylar.length) {
+    return fail(
+      "En az bir ürün eklemelisiniz."
+    );
+  }
+
+  const kabulNo =
+    text(body.kabul_no) ||
+    `MK-${Date.now()}`;
+
+  const faturaNo =
+    text(body.fatura_no) || null;
+
+  const kabulTarihi =
+    text(body.kabul_tarihi) ||
+    today();
+
+  let toplamTutar = 0;
+
+  const temizDetaylar = [];
+
+  /* -------------------------------------------------------
+     ÜRÜNLERİ KONTROL ET
+     ------------------------------------------------------- */
+
+  for (const item of detaylar) {
+
+    const urunId =
+      number(item.urun_id);
+
+    const miktar =
+      number(item.miktar);
+
+    const birimFiyat =
+      number(item.birim_fiyat);
+
+    const partiNo =
+      text(item.parti_no) || null;
+
+    const sonKullanmaTarihi =
+      text(item.son_kullanma_tarihi) || null;
+
+    if (!validId(urunId)) {
+      return fail(
+        "Geçersiz ürün."
+      );
+    }
+
+    if (miktar <= 0) {
+      return fail(
+        "Miktar 0'dan büyük olmalıdır."
+      );
+    }
+
+    if (birimFiyat < 0) {
+      return fail(
+        "Birim fiyat geçersiz."
+      );
+    }
+
+    const urun =
+      await DB.prepare(`
+        SELECT
+          id,
+          firma_id,
+          ad
+        FROM urunler
+        WHERE id = ?
+          AND aktif = 1
+      `)
+      .bind(urunId)
+      .first();
+
+    if (!urun) {
+      return fail(
+        `Ürün bulunamadı: ${urunId}`,
+        404
+      );
+    }
+
+    if (Number(urun.firma_id) !== firmaId) {
+      return fail(
+        `Ürün seçilen firmaya ait değil: ${urun.ad}`,
+        400
+      );
+    }
+
+    const toplam =
+      miktar * birimFiyat;
+
+    toplamTutar += toplam;
+
+    temizDetaylar.push({
+      urunId,
+      miktar,
+      birimFiyat,
+      toplam,
+      partiNo,
+      sonKullanmaTarihi
+    });
+  }
+
+  /* -------------------------------------------------------
+     MAL KABUL BAŞLIĞI
+     ------------------------------------------------------- */
+
+  const kabulId =
+    await insertDynamic(
+      DB,
+      "mal_kabuller",
+      {
+        firma_id: firmaId,
+        sube_id: subeId,
+        depo_id: depoId,
+        cari_id: cariId,
+        kabul_no: kabulNo,
+        fatura_no: faturaNo,
+        toplam_tutar: toplamTutar,
+        kabul_tarihi: kabulTarihi,
+        kullanici_id:
+          validId(body.kullanici_id)
+            ? Number(body.kullanici_id)
+            : null
+      },
+      [
+        "firma_id",
+        "sube_id",
+        "depo_id",
+        "cari_id",
+        "kabul_no",
+        "fatura_no",
+        "toplam_tutar",
+        "kabul_tarihi",
+        "kullanici_id"
+      ]
+    );
+
+  /* -------------------------------------------------------
+     DETAY + PARTİ + STOK
+     ------------------------------------------------------- */
+
+  for (const item of temizDetaylar) {
+
+    /* -----------------------------------------------
+       MAL KABUL DETAYI
+       ----------------------------------------------- */
+
+    await insertDynamic(
+      DB,
+      "mal_kabul_detaylari",
+      {
+        kabul_id: kabulId,
+        urun_id: item.urunId,
+        parti_no: item.partiNo,
+        son_kullanma_tarihi:
+          item.sonKullanmaTarihi,
+        miktar: item.miktar,
+        birim_fiyat: item.birimFiyat,
+        toplam: item.toplam
+      },
+      [
+        "kabul_id",
+        "urun_id",
+        "parti_no",
+        "son_kullanma_tarihi",
+        "miktar",
+        "birim_fiyat",
+        "toplam"
+      ]
+    );
+
+    /* -----------------------------------------------
+       PARTİ OLUŞTUR
+       ----------------------------------------------- */
+
+    const partiId =
+      await insertDynamic(
+        DB,
+        "partiler",
+        {
+          urun_id: item.urunId,
+          depo_id: depoId,
+          parti_no: item.partiNo,
+          son_kullanma_tarihi:
+            item.sonKullanmaTarihi,
+          miktar: item.miktar,
+          alis_maliyeti: item.birimFiyat
+        },
+        [
+          "urun_id",
+          "depo_id",
+          "parti_no",
+          "son_kullanma_tarihi",
+          "miktar",
+          "alis_maliyeti"
+        ]
+      );
+
+    /* -----------------------------------------------
+       STOK GİRİŞİ
+       ----------------------------------------------- */
+
+    const stokSonucu =
+      await stockMovement(
+        DB,
+        {
+          urun_id: item.urunId,
+          depo_id: depoId,
+          parti_id: partiId,
+          miktar: item.miktar,
+          hareket_tipi: "GIRIS",
+          birim_maliyet: item.birimFiyat,
+          referans_tipi: "MAL_KABUL",
+          referans_id: kabulId,
+          kullanici_id:
+            validId(body.kullanici_id)
+              ? Number(body.kullanici_id)
+              : null,
+          aciklama:
+            `Mal kabul: ${kabulNo}`
+        }
+      );
+
+    if (!stokSonucu.ok) {
+      return stokSonucu;
+    }
+  }
+
+  return ok({
+    id: kabulId,
+    kabul_no: kabulNo,
+    toplam_tutar: toplamTutar
+  }, 201);
+}
 /* =========================================================
    ANA ROUTER
    ========================================================= */
