@@ -365,57 +365,599 @@ async function dashboard(DB) {
     }
   });
 }
-/* =====================================================
-     12 - MAL KABUL ROUTES
-     ===================================================== */
+/* =========================================================
+   12 - MAL KABUL
+   ========================================================= */
 
-  if (
-    path === "/api/mal-kabuller" &&
-    method === "GET"
-  ) {
-    return listMalKabuller(
-      DB,
-      request
+/**
+ * MAL KABUL LİSTELE
+ * GET /api/mal-kabul
+ */
+async function listMalKabul(DB, request) {
+
+  const url = new URL(request.url);
+  const search = text(url.searchParams.get("search"));
+
+  let sql = `
+    SELECT
+      m.*,
+      f.ad AS firma_adi,
+      s.ad AS sube_adi,
+      d.ad AS depo_adi,
+      c.ad AS cari_adi
+    FROM mal_kabuller m
+    JOIN firmalar f
+      ON f.id = m.firma_id
+    JOIN subeler s
+      ON s.id = m.sube_id
+    JOIN depolar d
+      ON d.id = m.depo_id
+    LEFT JOIN cariler c
+      ON c.id = m.cari_id
+  `;
+
+  const params = [];
+
+  if (search) {
+    sql += `
+      WHERE
+        m.kabul_no LIKE ?
+        OR m.fatura_no LIKE ?
+        OR f.ad LIKE ?
+        OR s.ad LIKE ?
+        OR d.ad LIKE ?
+        OR c.ad LIKE ?
+    `;
+
+    const q = `%${search}%`;
+
+    params.push(
+      q,
+      q,
+      q,
+      q,
+      q,
+      q
     );
   }
 
-  if (
-    path === "/api/mal-kabuller" &&
-    method === "POST"
-  ) {
-    const body =
-      await readBody(request);
+  sql += `
+    ORDER BY m.id DESC
+  `;
 
-    return createMalKabul(
-      DB,
-      body
+  const result =
+    await DB.prepare(sql)
+      .bind(...params)
+      .all();
+
+  return ok({
+    data: result.results || []
+  });
+}
+
+
+/**
+ * MAL KABUL DETAY
+ * GET /api/mal-kabul/:id
+ */
+async function getMalKabul(DB, id) {
+
+  const kabul =
+    await DB.prepare(`
+      SELECT
+        m.*,
+        f.ad AS firma_adi,
+        s.ad AS sube_adi,
+        d.ad AS depo_adi,
+        c.ad AS cari_adi
+      FROM mal_kabuller m
+      JOIN firmalar f
+        ON f.id = m.firma_id
+      JOIN subeler s
+        ON s.id = m.sube_id
+      JOIN depolar d
+        ON d.id = m.depo_id
+      LEFT JOIN cariler c
+        ON c.id = m.cari_id
+      WHERE m.id = ?
+    `)
+    .bind(id)
+    .first();
+
+  if (!kabul) {
+    return fail(
+      "Mal kabul kaydı bulunamadı.",
+      404
     );
   }
 
-  const malKabulMatch =
-    path.match(
-      /^\/api\/mal-kabuller\/(\d+)$/
+  const detaylar =
+    await DB.prepare(`
+      SELECT
+        d.*,
+        u.ad AS urun_adi,
+        u.urun_kodu,
+        b.ad AS birim_adi,
+        b.sembol AS birim_sembol
+      FROM mal_kabul_detaylari d
+      JOIN urunler u
+        ON u.id = d.urun_id
+      LEFT JOIN birimler b
+        ON b.id = u.birim_id
+      WHERE d.kabul_id = ?
+      ORDER BY d.id
+    `)
+    .bind(id)
+    .all();
+
+  return ok({
+    data: {
+      ...kabul,
+      detaylar: detallelar.results || []
+    }
+  });
+}
+
+
+/**
+ * MAL KABUL OLUŞTUR
+ * POST /api/mal-kabul
+ *
+ * İşlem:
+ * 1. Mal kabul kaydı
+ * 2. Mal kabul detayları
+ * 3. Parti oluşturma
+ * 4. Stok artırma
+ * 5. Stok hareketi oluşturma
+ */
+async function createMalKabul(DB, body) {
+
+  const firmaId =
+    number(body.firma_id);
+
+  const subeId =
+    number(body.sube_id);
+
+  const depoId =
+    number(body.depo_id);
+
+  const cariId =
+    validId(body.cari_id)
+      ? Number(body.cari_id)
+      : null;
+
+  if (!validId(firmaId)) {
+    return fail("Firma seçimi zorunludur.");
+  }
+
+  if (!validId(subeId)) {
+    return fail("Şube seçimi zorunludur.");
+  }
+
+  if (!validId(depoId)) {
+    return fail("Depo seçimi zorunludur.");
+  }
+
+  const detaylar =
+    Array.isArray(body.detaylar)
+      ? body.detaylar
+      : [];
+
+  if (!detaylar.length) {
+    return fail(
+      "En az bir ürün eklemelisiniz."
     );
+  }
 
-  if (malKabulMatch) {
+  /* -------------------------------------------------------
+     FIRMA KONTROLÜ
+     ------------------------------------------------------- */
 
-    const id =
-      Number(malKabulMatch[1]);
+  const firma =
+    await DB.prepare(`
+      SELECT id
+      FROM firmalar
+      WHERE id = ?
+        AND aktif = 1
+    `)
+    .bind(firmaId)
+    .first();
 
-    if (!validId(id)) {
+  if (!firma) {
+    return fail(
+      "Firma bulunamadı.",
+      404
+    );
+  }
+
+  /* -------------------------------------------------------
+     ŞUBE KONTROLÜ
+     ------------------------------------------------------- */
+
+  const sube =
+    await DB.prepare(`
+      SELECT id
+      FROM subeler
+      WHERE id = ?
+        AND firma_id = ?
+        AND aktif = 1
+    `)
+    .bind(
+      subeId,
+      firmaId
+    )
+    .first();
+
+  if (!sube) {
+    return fail(
+      "Şube firmaya ait değil.",
+      400
+    );
+  }
+
+  /* -------------------------------------------------------
+     DEPO KONTROLÜ
+     ------------------------------------------------------- */
+
+  const depo =
+    await DB.prepare(`
+      SELECT id
+      FROM depolar
+      WHERE id = ?
+        AND sube_id = ?
+        AND aktif = 1
+    `)
+    .bind(
+      depoId,
+      subeId
+    )
+    .first();
+
+  if (!depo) {
+    return fail(
+      "Depo şubeye ait değil.",
+      400
+    );
+  }
+
+  /* -------------------------------------------------------
+     CARİ KONTROLÜ
+     ------------------------------------------------------- */
+
+  if (cariId) {
+
+    const cari =
+      await DB.prepare(`
+        SELECT id
+        FROM cariler
+        WHERE id = ?
+          AND firma_id = ?
+          AND aktif = 1
+      `)
+      .bind(
+        cariId,
+        firmaId
+      )
+      .first();
+
+    if (!cari) {
       return fail(
-        "Geçersiz mal kabul ID."
-      );
-    }
-
-    if (method === "GET") {
-      return getMalKabul(
-        DB,
-        id
+        "Cari bulunamadı veya firmaya ait değil.",
+        404
       );
     }
   }
 
+  /* -------------------------------------------------------
+     DETAYLARI DOĞRULA
+     ------------------------------------------------------- */
+
+  const temizDetaylar = [];
+
+  let toplamTutar = 0;
+
+  for (const item of detaylar) {
+
+    const urunId =
+      number(item.urun_id);
+
+    const miktar =
+      number(item.miktar);
+
+    const birimFiyat =
+      number(item.birim_fiyat);
+
+    if (!validId(urunId)) {
+      return fail(
+        "Geçersiz ürün."
+      );
+    }
+
+    if (miktar <= 0) {
+      return fail(
+        "Miktar 0'dan büyük olmalıdır."
+      );
+    }
+
+    if (birimFiyat < 0) {
+      return fail(
+        "Birim fiyat geçersiz."
+      );
+    }
+
+    const urun =
+      await DB.prepare(`
+        SELECT
+          id,
+          firma_id,
+          aktif
+        FROM urunler
+        WHERE id = ?
+          AND aktif = 1
+    `)
+      .bind(urunId)
+      .first();
+
+    if (!urun) {
+      return fail(
+        `Ürün bulunamadı: ${urunId}`,
+        404
+      );
+    }
+
+    if (Number(urun.firma_id) !== firmaId) {
+      return fail(
+        `Ürün firmaya ait değil: ${urunId}`,
+        400
+      );
+    }
+
+    const toplam =
+      miktar * birimFiyat;
+
+    toplamTutar += toplam;
+
+    temizDetaylar.push({
+      urunId,
+      miktar,
+      birimFiyat,
+      toplam,
+      partiNo:
+        text(item.parti_no) || null,
+      sonKullanmaTarihi:
+        text(item.son_kullanma_tarihi) || null
+    });
+  }
+
+  /* -------------------------------------------------------
+     KABUL NUMARASI
+     ------------------------------------------------------- */
+
+  const kabulNo =
+    text(body.kabul_no) ||
+    `MK-${Date.now()}`;
+
+  const kabulTarihi =
+    text(body.kabul_tarihi) ||
+    today();
+
+  /* -------------------------------------------------------
+     ANA MAL KABUL
+     ------------------------------------------------------- */
+
+  const kabulId =
+    await insertDynamic(
+      DB,
+      "mal_kabuller",
+      {
+        firma_id: firmaId,
+        sube_id: subeId,
+        depo_id: depoId,
+        cari_id: cariId,
+        kabul_no: kabulNo,
+        fatura_no:
+          text(body.fatura_no) || null,
+        toplam_tutar: toplamTutar,
+        kabul_tarihi: kabulTarihi,
+        kullanici_id:
+          validId(body.kullanici_id)
+            ? Number(body.kullanici_id)
+            : null
+      },
+      [
+        "firma_id",
+        "sube_id",
+        "depo_id",
+        "cari_id",
+        "kabul_no",
+        "fatura_no",
+        "toplam_tutar",
+        "kabul_tarihi",
+        "kullanici_id"
+      ]
+    );
+
+  /* -------------------------------------------------------
+     DETAY + PARTİ + STOK
+     ------------------------------------------------------- */
+
+  for (const item of temizDetaylar) {
+
+    /* MAL KABUL DETAYI */
+
+    await insertDynamic(
+      DB,
+      "mal_kabul_detaylari",
+      {
+        kabul_id: kabulId,
+        urun_id: item.urunId,
+        parti_no: item.partiNo,
+        son_kullanma_tarihi:
+          item.sonKullanmaTarihi,
+        miktar: item.miktar,
+        birim_fiyat: item.birimFiyat,
+        toplam: item.toplam
+      },
+      [
+        "kabul_id",
+        "urun_id",
+        "parti_no",
+        "son_kullanma_tarihi",
+        "miktar",
+        "birim_fiyat",
+        "toplam"
+      ]
+    );
+
+    /* PARTİ OLUŞTUR */
+
+    const partiId =
+      await insertDynamic(
+        DB,
+        "partiler",
+        {
+          urun_id: item.urunId,
+          depo_id: depoId,
+          parti_no: item.partiNo,
+          son_kullanma_tarihi:
+            item.sonKullanmaTarihi,
+          miktar: item.miktar,
+          alis_maliyeti: item.birimFiyat
+        },
+        [
+          "urun_id",
+          "depo_id",
+          "parti_no",
+          "son_kullanma_tarihi",
+          "miktar",
+          "alis_maliyeti"
+        ]
+      );
+
+    /* STOK HAREKETİ */
+
+    const mevcut =
+      await DB.prepare(`
+        SELECT miktar
+        FROM mevcut_stoklar
+        WHERE urun_id = ?
+          AND depo_id = ?
+      `)
+      .bind(
+        item.urunId,
+        depoId
+      )
+      .first();
+
+    const eskiStok =
+      number(mevcut?.miktar);
+
+    const yeniStok =
+      eskiStok + item.miktar;
+
+    await DB.prepare(`
+      INSERT INTO stok_hareketleri (
+        urun_id,
+        parti_id,
+        depo_id,
+        hareket_tipi,
+        miktar,
+        birim_maliyet,
+        referans_tipi,
+        referans_id,
+        kullanici_id,
+        aciklama
+      )
+      VALUES (?,?,?,?,?,?,?,?,?,?)
+    `)
+    .bind(
+      item.urunId,
+      partiId,
+      depoId,
+      "MAL_KABUL",
+      item.miktar,
+      item.birimFiyat,
+      "MAL_KABUL",
+      kabulId,
+      validId(body.kullanici_id)
+        ? Number(body.kullanici_id)
+        : null,
+      `Mal kabul: ${kabulNo}`
+    )
+    .run();
+
+    /* MEVCUT STOK GÜNCELLE */
+
+    await DB.prepare(`
+      INSERT INTO mevcut_stoklar (
+        urun_id,
+        depo_id,
+        miktar
+      )
+      VALUES (?,?,?)
+      ON CONFLICT(urun_id,depo_id)
+      DO UPDATE SET
+        miktar = mevcut_stoklar.miktar + excluded.miktar
+    `)
+    .bind(
+      item.urunId,
+      depoId,
+      item.miktar
+    )
+    .run();
+  }
+
+  return ok({
+    id: kabulId,
+    kabul_no: kabulNo,
+    toplam_tutar: toplamTutar,
+    detay_sayisi: temizDetaylar.length
+  }, 201);
+}
+
+
+/**
+ * MAL KABUL SİL
+ * Önce detayları, sonra ana kaydı siler.
+ *
+ * NOT:
+ * Üretimde mal kabul silme işlemini ayrıca stok geri alma
+ * işlemiyle korumalı hale getireceğiz.
+ */
+async function deleteMalKabul(DB, id) {
+
+  const mevcut =
+    await DB.prepare(`
+      SELECT id
+      FROM mal_kabuller
+      WHERE id = ?
+    `)
+    .bind(id)
+    .first();
+
+  if (!mevcut) {
+    return fail(
+      "Mal kabul kaydı bulunamadı.",
+      404
+    );
+  }
+
+  await DB.prepare(`
+    DELETE FROM mal_kabul_detaylari
+    WHERE kabul_id = ?
+  `)
+  .bind(id)
+  .run();
+
+  await DB.prepare(`
+    DELETE FROM mal_kabuller
+    WHERE id = ?
+  `)
+  .bind(id)
+  .run();
+
+  return ok();
+}
 /* =========================================================
    GENEL TABLO İŞLEMLERİ
    ========================================================= */
